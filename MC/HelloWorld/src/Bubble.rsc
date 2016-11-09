@@ -38,7 +38,7 @@ public list[int] sort2(list[int] numbers){
        	  fail;
        }
      default: return numbers;
-   }
+   }k
 }
 
 test bool sorted2(list[int] lst) = isSorted(sort2(lst));
