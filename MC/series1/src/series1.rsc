@@ -9,24 +9,34 @@ import String;
 
 public loc project1 = |project://HelloWorld2/src/|;
 public loc project2 = |project://smallsql0.21_src/src/|;
-public M3 model = createM3FromEclipseProject(project2);
+public loc project3 = |project://hsqldb-2.3.1/src/|;
+
+public void runTests(loc project)
+{
+	model = createM3FromEclipseProject(project);
+	println("Total units: <getUnits(model)>");
+	println("Total lines in classes: <classesTotalLines(model)>");
+	println("Total lines in project: <countTotalProjectLines2(model)>");
+}
 
 public int getUnits(M3 m)
 {
 	return size(classes(m));
 }
 
-public int classesTotalLines(M3 m)
+//returns a list of class sizes
+public list[int] classesTotalLines(M3 m)
 {
-	mapper(toList(classes(model)), countFileCodeLines);
+	return mapper(toList(classes(m)), countFileCodeLines);
 }
 
+//returns total lines of code in each class, by summing class sizes
 public int countTotalProjectLines2(M3 m)
 {
-	sum(classesTotalLines(m));
+	return sum(classesTotalLines(m));
 }
 
-//returns total lines of code in a project
+//returns total lines of code in a project, from files
 public int countTotalProjectLines(loc project)
 {
 	return sum(mapper(project.ls, countFileCodeLines));
