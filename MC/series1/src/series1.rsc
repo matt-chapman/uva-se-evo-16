@@ -2,6 +2,8 @@ module series1
 
 import lang::java::m3::Core;
 import lang::java::jdt::m3::Core;
+import analysis::m3::AST;
+import lang::java::jdt::m3::AST;
 import Set;
 import List;
 import IO;
@@ -17,6 +19,29 @@ public void runTests(loc project)
 	println("Total units: <getUnits(model)>");
 	println("Total lines in classes: <classesTotalLines(model)>");
 	println("Total lines in project: <countTotalProjectLines2(model)>");
+	
+	units = toList(classes(model));
+	
+	ast = createAstFromFile(units[0],true,javaVersion="1.7");
+        
+    visit(ast){ 
+    case \if(icond,ithen,ielse): {
+        println(" if-then-else statement with condition <icond> found"); } 
+    case \if(icond,ithen): {
+        println(" if-then statement with condition <icond> found"); } 
+};
+}
+
+public void Test(loc project)
+{
+	model = createM3FromEclipseProject(project);
+	units = classes(model);
+	println(units[0]);
+}
+
+void statements(loc location) {
+        ast = createAstFromFile(location,true,javaVersion="1.7");
+        for(/Statement s := ast) println(readFile(s@src));
 }
 
 public int getUnits(M3 m)
