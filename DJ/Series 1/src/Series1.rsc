@@ -42,6 +42,7 @@ public num countDuplicates(set[loc] allFiles)
 	
 		list[tuple[str string, loc location]] fileLines = filterLines(file);
 		int searchIndex = 0;
+		fileLinesSize = size(fileLines);
 		totalSize += fileLinesSize;
 		
 		while(searchIndex < fileLinesSize-5)
