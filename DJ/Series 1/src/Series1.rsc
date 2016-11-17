@@ -111,7 +111,7 @@ bool isWhiteSpace(str s){
 }
 
 bool isComment(str s){
-	if(/((\s|\/*)(\/\*|\s\*)|[^\w,\;]\s\/*\/)/ := s)
+	if(/((\s|\/*)(\/\*|^(\s+\*))|[^\w,\;]\s\/*\/)/ := s)
 	{
 		//println("Hit: <s>");
 		return true;
