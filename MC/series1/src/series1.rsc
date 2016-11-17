@@ -4,6 +4,7 @@ import lang::java::m3::Core;
 import lang::java::jdt::m3::Core;
 import analysis::m3::AST;
 import lang::java::jdt::m3::AST;
+import util::Benchmark;
 import Set;
 import List;
 import IO;
@@ -15,28 +16,58 @@ public loc project3 = |project://hsqldb-2.3.1/src/|;
 
 public void runTests(loc project)
 {
+	num simpleTotal = 0;
+	num moreTotal = 0;
+	num complexTotal = 0;
+	num untestableTotal = 0;
+	
+	//start profiling
+	startTime = getMilliTime();
+
 	//generate the M3 model and run off a list of basic metrics
 	model = createM3FromEclipseProject(project);
-	println("Total units: <getUnits(model)>");
-	//println("Total lines in classes: <classesTotalLines(model)>");
-	println("Total lines in project: <countTotalProjectLines2(model)>");
+	units = toList(methods(model));
+	totalLines = sum(unitsTotalLines(model));
 	
-	//grab a list of units in the project
-	units = toList(classes(model));
-	//generate a list of unit complexities
-	complexityList = mapper(units, getComplexity);
-	//spit out the complexity per unit
-	//println("Complexity per unit: <complexityList>");
-	println("Average unit complexity: <sum(complexityList) / size(complexityList)>");
+	complexities = for(unit <- units) append getComplexity(unit, model);
+	sizes = for(unit <- units) append countFileCodeLines(unit);
+	
+	//generate tuple with LOC and complexity
+	list[tuple[int lines, int complexity]] complexityList = zip(sizes, complexities);
+	
+	//filter tuples by complexity, get a list of LOC numbers
+	simple = for(unit <- complexityList) if (unit.complexity <= 10) append unit.lines;
+	more = for(unit <- complexityList) if (unit.complexity >= 11 && unit.complexity <= 20) append unit.lines;
+	complex = for(unit <- complexityList) if (unit.complexity >= 21 && unit.complexity <= 50) append unit.lines;
+	untestable = for(unit <- complexityList) if (unit.complexity > 50) append unit.lines;
+	
+	//calculate percentages
+	num percentageSimple = (sum([0]+simple) / totalLines) * 100;
+	num percentageMore = (sum([0]+more) / totalLines) * 100;
+	num percentageComplex = (sum([0]+complex) / totalLines) * 100;
+	num percentageUntestable = (sum([0]+untestable) / totalLines) * 100;
+	
+	//output metrics
+	println("Units in project: <getNumUnits(model)>");
+	println("Total LOC in project: <totalLines>");
+	println("% of lines in simple units: <percentageSimple>");
+	println("% of lines in more complex units: <percentageMore>");
+	println("% of lines in complex units: <percentageComplex>");
+	println("% of lines in untestable units: <percentageUntestable>");
+	println("% total (debugging purposes): <percentageSimple + percentageMore + percentageComplex + percentageUntestable>");
+	
+	//output profiling info
+	endTime = getMilliTime();
+	println("Duration: <endTime-startTime>ms");
 	
 }
 
-public int getComplexity(loc l)
+public int getComplexity(loc l, M3 model)
 {
 	//start with a complexity of 1
 	int complexity = 1;
 	//generate the ast from the given loc
-	ast = createAstFromFile(l, true, javaVersion="1.7");
+	ast = getMethodASTEclipse(l, model=model);
 	
 	//visit all statements in the ast, increment complexity accordingly
 	visit(ast){
@@ -61,22 +92,16 @@ public int getComplexity(loc l)
 	return complexity;
 }
 
-//print out all statements in a given location
-void statements(loc location) {
-        ast = createAstFromFile(location,true,javaVersion="1.7");
-        for(/Statement s := ast) println(readFile(s@src));
-}
-
 //returns the number of units in a given project
-public int getUnits(M3 m)
+public int getNumUnits(M3 m)
 {
-	return size(classes(m));
+	return size(methods(m));
 }
 
 //returns a list of class sizes
-public list[int] classesTotalLines(M3 m)
+public list[int] unitsTotalLines(M3 m)
 {
-	return mapper(toList(classes(m)), countFileCodeLines);
+	return mapper(toList(methods(m)), countFileCodeLines);
 }
 
 //returns total lines of code in each class, by summing class sizes
@@ -97,7 +122,7 @@ public int countFileCodeLines(loc file)
 
 	source = readFileLines(file);
 	whiteLines = [s | s <- source, /^[ \t\r\n]*$/ := s];
-	commentLines1 = [s | s <- source, /((\s|\/*)(\/\*|^(\s+\*))|[^\w,\;]\s\/*\/)/ := s];
+	commentLines1 = [s | s <- source, /((\s|\/*)(\/\*|^(\s+\*))|^(\s*\/*\/))/ := s];
 	
 	//println(commentLines1);
 	return size(source) - size(whiteLines) - size(commentLines1);			
