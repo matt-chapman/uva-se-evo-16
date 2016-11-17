@@ -20,7 +20,7 @@ public loc project2 = |project://smallsql0.21_src/src/|;
 
 set[loc] getProjectfiles() { 
    bool containsFile(loc d) = isFile(d) ? (d.extension == "java") : false;
-   return find(project1, containsFile);
+   return find(project2, containsFile);
 }
 
 public void analyze()
@@ -42,26 +42,32 @@ public int countDuplicates(set[loc] allFiles)
 		list[tuple[str string, loc location]] fileLines = filterLines(file);
 		int searchIndex = 0;
 		int fileLinesSize = size(fileLines);
-		while(searchIndex < fileLinesSize)
+		while(searchIndex < fileLinesSize-5)
 		{
+			
 			duplicateString = getSixLines(fileLines, searchIndex);
-			if(searchIndex+5 < fileLinesSize && duplicateString != "" && (duplicateString in nonDuplicates)){ 
-				duplicateCount += 1;
-				searchIndex += 5;
+			if(searchIndex < fileLinesSize && duplicateString != "" && (duplicateString in nonDuplicates)){ 
+
 				//totalsize -= 5;
 				duplicates += fileLines[searchIndex];
-				//println("Duplicate found!");
-				//println(duplicateString);
-				//println(fileLines[searchIndex].location);
-				//println(nonDuplicates[duplicateString]);
+				println("Duplicate <duplicateCount> found!");
+				println(duplicateString);
+				fileLines[searchIndex].location.length = (fileLines[searchIndex+5].location.offset +size(fileLines[searchIndex+5].string)) - fileLines[searchIndex].location.offset;
+				
+				println(fileLines[searchIndex].location);
+				println(nonDuplicates[duplicateString]);
+				
+				duplicateCount += 1;
+				searchIndex += 5;
 			}
 			else{
+				fileLines[searchIndex].location.length = (fileLines[searchIndex+5].location.offset +size(fileLines[searchIndex+5].string)) - fileLines[searchIndex].location.offset;
 				nonDuplicates += (duplicateString : fileLines[searchIndex].location);
 				searchIndex += 1;
 				//totalsize -= 1;
 			}
 			
-			println("Analyzing line:<searchIndex> of <fileLinesSize> Duplicatecount: <duplicateCount> and <totalsize> files to go.");
+			//println("Analyzing line:<searchIndex> of <fileLinesSize> Duplicatecount: <duplicateCount> and <totalsize> files to go.");
 			
 		}
 		totalsize -= 1;
@@ -82,14 +88,14 @@ public str getSixLines(list[tuple[str string,loc location]] lines, int startInde
 public list[tuple[str,loc]] filterLines(loc file)
 {
 	fileLines = readFileLines(file);
-
 	lineIndex = 0;
 	
 	list[tuple[str,loc]] filteredLines = [];
 	
 	for (s <- fileLines){ 
 		if(!isWhiteSpace(s) && !isComment(s)){
-			filteredLines += <s,file(lineIndex, 0,<0,0>,<0,0>)>;
+			//println(s);
+			filteredLines += <s,file(lineIndex, 100,<0,0>,<0,0>)>;
 		}
 		lineIndex += 2 + size(s);
 	}
@@ -97,12 +103,19 @@ public list[tuple[str,loc]] filterLines(loc file)
 }
 
 bool isWhiteSpace(str s){
-	if(!/^[ \t\r\n]*$/ := s) return false;
+	if(/^[ \t\r\n]*$/ := s) {
+		//println(s);
+		return true;
+	}
 	return false;
 }
 
 bool isComment(str s){
-	if(!/((\s|\/*)(\/\*|\s\*)|[^\w,\;]\s\/*\/)/ := s) return false;
+	if(/((\s|\/*)(\/\*|\s\*)|[^\w,\;]\s\/*\/)/ := s)
+	{
+		//println("Hit: <s>");
+		return true;
+	}
 	return false;
 }
 
