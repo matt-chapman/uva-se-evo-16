@@ -77,7 +77,14 @@ private str getSixLines(list[tuple[str string,loc location]] lines, int startInd
 
 public num getDuplicatePercentage(tuple[num total, num dup] metrics)
 {
-	return ((metrics.dup*6)/(metrics.total))*100;
+	percentDuplicated = ((metrics.dup*6)/(metrics.total))*100;
+	
+	println("");
+	println("DUPLICATION");
+	println("---");
+	println("Percentage of codebase duplicated: <percentDuplicated>");
+	
+	return percentDuplicated;
 }
 
 public int getDuplicateRanking(num percentage)

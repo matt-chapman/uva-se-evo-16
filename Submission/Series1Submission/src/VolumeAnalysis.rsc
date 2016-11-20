@@ -1,4 +1,4 @@
-module Volume
+module VolumeAnalysis
 
 public int makeVolumeRank(num lines)
 {

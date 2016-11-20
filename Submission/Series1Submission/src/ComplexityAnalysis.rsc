@@ -10,7 +10,7 @@ import List;
 import IO;
 import String;
 
-public void runComplexityAnalysis(M3 model)
+public num runComplexityAnalysis(M3 model)
 {
 	num simpleTotal = 0;
 	num moreTotal = 0;
@@ -40,15 +40,25 @@ public void runComplexityAnalysis(M3 model)
 	num percentageUntestable = (sum([0.00]+untestable) / totalLines) * 100;
 	
 	//output metrics
-	println("Units in project: <numUnits>");
-	println("Total LOC in project: <totalLines>");
-	println("---");
-	println("% LOC in simple units: <percentageSimple>");
-	println("% LOC in more complex units: <percentageMore>");
-	println("% LOC in complex units: <percentageComplex>");
-	println("% LOC in untestable units: <percentageUntestable>");
 	println("");
-	println("SIG SCORE COMPLEXITY = <makeComplexityRank(percentageSimple, percentageMore, percentageComplex, percentageUntestable)>");
+	println("UNIT SIZE");
+	println("---");
+	println("Units in project: <numUnits>");
+	println("---");
+	println("Smallest unit: <min(sizes)>");
+	println("Largest unit: <max(sizes)>");
+	println("Average unit size: <(sum(sizes) / size(sizes))>");
+	println("");
+	println("UNIT COMPLEXITY");
+	println("---");
+	println("% LOC in simple units (not much risk): <percentageSimple>");
+	println("% LOC in more complex units (moderate risk): <percentageMore>");
+	println("% LOC in complex units (high risk): <percentageComplex>");
+	println("% LOC in untestable units (very high risk): <percentageUntestable>");
+
+	//println("SIG SCORE COMPLEXITY = <>");
+	
+	return makeComplexityRank(percentageSimple, percentageMore, percentageComplex, percentageUntestable);
 	
 }
 
