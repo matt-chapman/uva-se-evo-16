@@ -16,10 +16,12 @@ Repo for Matt Chapman &amp; Dennis van der Werf, for Software Evolution 2016 @ U
 - [x] Calculate SIG score for Unit Complexity
 - [x] Calculate SIG score for Code Duplication
 
+
 - [ ] Calculate SIG score for Maintainability (overall)
 - [ ] Calculate SIG score for Analysability
 - [ ] Calculate SIG score for Changeability
 - [ ] Calculate SIG score for Testability
+
 
 - [ ] Generate neat output
 
@@ -31,4 +33,4 @@ Repo for Matt Chapman &amp; Dennis van der Werf, for Software Evolution 2016 @ U
 
 ### Misc. TODOs
 
-- [ ] Implement test for selecting correct test metric report 
+- [ ] Implement test for selecting correct test metric report (see line 63, Metrics.rsc)
