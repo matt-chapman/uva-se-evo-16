@@ -60,8 +60,8 @@ public void runTests(loc project)
 	//INCLUDES OUTPUT OF UNIT SIZES
 	cRank = runComplexityAnalysis(model);
 	
-	//if(project == |project://HelloWorld2/src/|)
-		tRank = getTestCoverageMetrics(csvloc1);
+	//if(project.contains == |project://HelloWorld2/src/|)
+		tRank = getTestCoverageMetrics(csvloc2);
 	//else if (project == |project://hsqldb-2.3.1/hsqldb/|)
 		//tRank = getTestCoverageMetrics(csvloc2);
 	
