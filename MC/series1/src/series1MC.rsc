@@ -1,4 +1,4 @@
-module series1
+module series1MC
 
 import lang::java::m3::Core;
 import lang::java::jdt::m3::Core;
@@ -20,7 +20,7 @@ public void runTests(loc project)
 	num moreTotal = 0;
 	num complexTotal = 0;
 	num untestableTotal = 0;
-	
+
 	//start profiling
 	startTime = getMilliTime();
 
@@ -31,25 +31,25 @@ public void runTests(loc project)
 	unitsLines = unitsTotalLines(model);
 	totalLines = sum(unitsLines);
 	unitSizeDist = makeUnitSizeRank(unitsLines, numUnits);
-	
+
 	complexities = for(unit <- units) append getComplexity(unit, model);
 	sizes = for(unit <- units) append countFileCodeLines(unit);
-	
+
 	//generate tuple with LOC and complexity
 	list[tuple[int lines, int complexity]] complexityList = zip(sizes, complexities);
-	
+
 	//filter tuples by complexity, get a list of LOC numbers
 	simple = for(unit <- complexityList) if (unit.complexity <= 10) append unit.lines;
 	more = for(unit <- complexityList) if (unit.complexity >= 11 && unit.complexity <= 20) append unit.lines;
 	complex = for(unit <- complexityList) if (unit.complexity >= 21 && unit.complexity <= 50) append unit.lines;
 	untestable = for(unit <- complexityList) if (unit.complexity > 50) append unit.lines;
-	
+
 	//calculate percentages
 	num percentageSimple = (sum([0.00]+simple) / totalLines) * 100;
 	num percentageMore = (sum([0.00]+more) / totalLines) * 100;
 	num percentageComplex = (sum([0.00]+complex) / totalLines) * 100;
 	num percentageUntestable = (sum([0.00]+untestable) / totalLines) * 100;
-	
+
 	//output metrics
 	println("Units in project: <numUnits>");
 	println("Total LOC in project: <totalLines>");
@@ -68,23 +68,23 @@ public void runTests(loc project)
 	println("SIG SCORE COMPLEXITY = <makeComplexityRank(percentageSimple, percentageMore, percentageComplex, percentageUntestable)>");
 	println("SIG SCORE VOLUME = <makeVolumeRank(totalLines)>");
 	//println("SIG SCORE UNIT SIZE = <>");
-	
+
 	//output profiling info
 	endTime = getMilliTime();
 	println("Duration: <endTime-startTime>ms");
-	
+
 }
 
 public int makeVolumeRank(num lines)
 {
 	num klines = lines / 1000;
-	
+
 	//++  0-66
 	//+   66-246
-	//o   246-665 
-	//-   655-1,310 
-	//--  > 1,310 
-	
+	//o   246-665
+	//-   655-1,310
+	//--  > 1,310
+
 	if( klines > 0 && klines <= 66)
 	{
 		return 4;
@@ -133,19 +133,19 @@ public list[num] makeUnitSizeRank(list[int] units, num numUnits)
 	num rank2 = 0;
 	num rank3 = 0;
 	num rank4 = 0;
-	
+
 	ranks = sort(calcUnitSizeRanks(units));
-	
+
 	for (rank <- ranks)
 		if (rank == 1) rank1 += 1;
 		else if (rank == 2) rank2 += 1;
 		else if (rank == 3) rank3 += 1;
 		else if (rank == 4) rank4 += 1;
-	
+
 	list[num] totals = [rank4, rank3, rank2, rank1];
-	
+
 	return [ ((i / numUnits) * 100) | i <- totals];
-	
+
 }
 
 public int makeComplexityRank(num low, num moderate, num high, num vhigh)
@@ -155,7 +155,7 @@ public int makeComplexityRank(num low, num moderate, num high, num vhigh)
 	//o       40% moderate, 10% high, 0% very high
 	//-       50% moderate, 15% high, 5% very high
 	//--      >50% moderate, >15% high, >5% very high
-	
+
 	if( moderate <= 25.0 && high == 0.0 && vhigh == 0.0 )
 	{
 		return 4;
@@ -176,7 +176,7 @@ public int makeComplexityRank(num low, num moderate, num high, num vhigh)
 	{
 		return 0;
 	}
-	
+
 }
 
 public int getComplexity(loc l, M3 model)
@@ -185,13 +185,13 @@ public int getComplexity(loc l, M3 model)
 	int complexity = 1;
 	//generate the ast from the given loc
 	ast = getMethodASTEclipse(l, model=model);
-	
+
 	//visit all statements in the ast, increment complexity accordingly
 	visit(ast){
 		case \if(icond,ithen,ielse): {	//if then else
-       		complexity += 1; } 
+       		complexity += 1; }
     	case \if(icond,ithen): {		//if then
-        	complexity += 1; } 
+        	complexity += 1; }
         case \switch(_,_): {			//switch statements
         	complexity += 1; }
         case \case(_): {				//cases in switch statements
@@ -201,11 +201,11 @@ public int getComplexity(loc l, M3 model)
         case \for(_,_,_,_,_): {			//for loops with lists of updaters
         	complexity += 1; }
         case \while(_,_): {				//while loops
-        	complexity += 1; }	
+        	complexity += 1; }
         case \do(_,_): {				//do while
         	complexity += 1; }
 	}
-	
+
 	return complexity;
 }
 
@@ -240,8 +240,8 @@ public int countFileCodeLines(loc file)
 	source = readFileLines(file);
 	whiteLines = [s | s <- source, /^[ \t\r\n]*$/ := s];
 	commentLines1 = [s | s <- source, /((\s|\/*)(\/\*|^(\s+\*))|^(\s*\/*\/))/ := s];
-	
+
 	//println(commentLines1);
-	return size(source) - size(whiteLines) - size(commentLines1);			
+	return size(source) - size(whiteLines) - size(commentLines1);
 
 }
