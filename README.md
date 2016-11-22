@@ -17,10 +17,10 @@ Repo for Matt Chapman &amp; Dennis van der Werf, for Software Evolution 2016 @ U
 - [x] Calculate SIG score for Code Duplication
 
 
-- [ ] Calculate SIG score for Maintainability (overall)
-- [ ] Calculate SIG score for Analysability
-- [ ] Calculate SIG score for Changeability
-- [ ] Calculate SIG score for Testability
+- [x] Calculate SIG score for Maintainability (overall)
+- [x] Calculate SIG score for Analysability
+- [x] Calculate SIG score for Changeability
+- [x] Calculate SIG score for Testability
 
 
 - [ ] Generate neat output
@@ -29,7 +29,7 @@ Repo for Matt Chapman &amp; Dennis van der Werf, for Software Evolution 2016 @ U
 
 - [x] Calculate metric for Test Quality
 - [x] Calculate SIG score for 
-- [ ] Calculate SIG score for Stability
+- [x] Calculate SIG score for Stability
 
 ### Misc. TODOs
 

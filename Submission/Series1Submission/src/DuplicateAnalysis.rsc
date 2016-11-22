@@ -96,6 +96,16 @@ public int getDuplicateRanking(num percentage)
 	return 0;
 }
 
+public int makeSizeRanking(num lines)
+{
+	num kloc = lines/1000;
+	if(kloc <= 66) return 4;
+	else if(kloc <= 246) return 3;
+	else if(kloc <= 665) return 2;
+	else if(kloc <= 1310) return 1;
+	return 0;
+}
+
 public list[tuple[str,loc]] filterLines(loc file)
 {
 	fileLines = readFileLines(file);

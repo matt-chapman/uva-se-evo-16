@@ -55,7 +55,7 @@ public num countDuplicates(set[loc] allFiles)
 			if(searchIndex < fileLinesSize && duplicateString != "" && (duplicateString in nonDuplicates))
 			{ 
 				duplicates += fileLines[searchIndex];
-							
+
 				//println("False Duplicate <duplicateCount> found!");
 				//println(duplicateString);	
 				//println(fileLines[searchIndex].location);
@@ -78,7 +78,6 @@ public num countDuplicates(set[loc] allFiles)
 	println("Total line count: <totalSize>, <duplicateCount>(<procent>%) duplicate lines, Ranking: <getDuplicateRanking(procent)>");
 	return duplicateCount;
 }
-
 
 public str getSixLines(list[tuple[str string,loc location]] lines, int startIndex)
 {

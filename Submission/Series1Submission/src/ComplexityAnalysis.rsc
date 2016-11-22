@@ -10,7 +10,7 @@ import List;
 import IO;
 import String;
 
-public num runComplexityAnalysis(M3 model)
+public tuple[int,int] runComplexityAnalysis(M3 model)
 {
 	num simpleTotal = 0;
 	num moreTotal = 0;
@@ -19,13 +19,16 @@ public num runComplexityAnalysis(M3 model)
 
 	units = toList(methods(model));
 	numUnits = getNumUnits(model);
-	totalLines = sum(unitsTotalLines(model));
+	totalLines = sum(unitsTotalLines(model));	
 	
 	complexities = for(unit <- units) append getComplexity(unit, model);
 	sizes = for(unit <- units) append countFileCodeLines(unit);
 	
+	list[num] uSizeRanks = makeUnitSizeRank(sizes, numUnits);
+	
+	
 	//generate tuple with LOC and complexity
-	list[tuple[int lines, int complexity]] complexityList = zip(sizes, complexities);
+	list[tuple[int lines, int complexity]] complexityList = zip(sizes, complexities);	
 	
 	//filter tuples by complexity, get a list of LOC numbers
 	simple = for(unit <- complexityList) if (unit.complexity <= 10) append unit.lines;
@@ -58,7 +61,7 @@ public num runComplexityAnalysis(M3 model)
 
 	//println("SIG SCORE COMPLEXITY = <>");
 	
-	return makeComplexityRank(percentageSimple, percentageMore, percentageComplex, percentageUntestable);
+	return <makeComplexityRank(percentageSimple, percentageMore, percentageComplex, percentageUntestable),makeComplexityRank(uSizeRanks[0],uSizeRanks[1],uSizeRanks[2],uSizeRanks[3])>;
 	
 }
 
@@ -69,22 +72,19 @@ public int makeComplexityRank(num low, num moderate, num high, num vhigh)
 	{
 		return 4;
 	}
-	else if ( moderate >= 26.0 && moderate < 30.0 && high > 0 && high <= 5 && vhigh == 0.0 )
+	else if ( moderate < 30.0 && high <= 5 && vhigh == 0.0 )
 	{
 		return 3;
 	}
-	else if ( moderate >= 31.0 && moderate < 40 && high >=6 && high < 10 && vhigh == 0.0 )
+	else if ( moderate < 40 && high < 10 && vhigh == 0.0 )
 	{
 		return 2;
 	}
-	else if ( moderate >= 41.0 && moderate < 50.0 && high >= 11.0 && high < 15.0 && vhigh <= 5.0 )
+	else if ( moderate < 50.0 && high < 15.0 && vhigh <= 5.0 )
 	{
 		return 1;
 	}
-	else if ( moderate > 50.0 || high > 15.0 || vhigh > 5)
-	{
-		return 0;
-	}
+	return 0;
 }
 
 //generates complexity score for given method
@@ -139,5 +139,86 @@ public int countFileCodeLines(loc file)
 	commentLines1 = [s | s <- source, /((\s|\/*)(\/\*|^(\s+\*))|^(\s*\/*\/))/ := s];
 	
 	return size(source) - size(whiteLines) - size(commentLines1);			
+
+}
+
+public list[int] calcUnitSizeRanks(list[int] units)
+{
+	return for (numLines <- units)
+		if(numLines > 0 && numLines <= 30)
+			append 4;
+		else if (numLines >= 31 && numLines < 44)
+			append 3;
+		else if (numLines >= 45 && numLines < 74)
+			append 2;
+		else if (numLines > 74)
+			append 1;
+}
+
+public list[num] makeUnitSizeRank(list[int] units, num numUnits)
+{
+
+//â˜…â˜…â˜…â˜…â˜… - 19.5 10.9 3.9
+//â˜…â˜…â˜…â˜…âœ© - 26.0 15.5 6.5
+//â˜…â˜…â˜…âœ©âœ© - 34.1 22.2 11.0
+//â˜…â˜…âœ©âœ©âœ© - 45.9 31.4 18.1
+
+	//map[int rank, int j] mapOfRanks = distribution(calcUnitSizeRanks(units));
+	num rank1 = 0;
+	num rank2 = 0;
+	num rank3 = 0;
+	num rank4 = 0;
+
+	ranks = sort(calcUnitSizeRanks(units));
+
+	for (rank <- ranks)
+		if (rank == 1) rank1 += 1;
+		else if (rank == 2) rank2 += 1;
+		else if (rank == 3) rank3 += 1;
+		else if (rank == 4) rank4 += 1;
+
+	list[num] totals = [rank4, rank3, rank2, rank1];
+
+	return [ ((i / numUnits) * 100) | i <- totals];
+
+}
+public list[int] calcUnitSizeRanks(list[int] units)
+{
+	return for (numLines <- units)
+		if(numLines > 0 && numLines <= 30)
+			append 4;
+		else if (numLines >= 31 && numLines < 44)
+			append 3;
+		else if (numLines >= 45 && numLines < 74)
+			append 2;
+		else if (numLines > 74)
+			append 1;
+}
+
+public list[num] makeUnitSizeRank(list[int] units, num numUnits)
+{
+
+//â˜…â˜…â˜…â˜…â˜… - 19.5 10.9 3.9
+//â˜…â˜…â˜…â˜…âœ© - 26.0 15.5 6.5
+//â˜…â˜…â˜…âœ©âœ© - 34.1 22.2 11.0
+//â˜…â˜…âœ©âœ©âœ© - 45.9 31.4 18.1
+
+	//map[int rank, int j] mapOfRanks = distribution(calcUnitSizeRanks(units));
+	num rank1 = 0;
+	num rank2 = 0;
+	num rank3 = 0;
+	num rank4 = 0;
+
+	ranks = sort(calcUnitSizeRanks(units));
+
+	for (rank <- ranks)
+		if (rank == 1) rank1 += 1;
+		else if (rank == 2) rank2 += 1;
+		else if (rank == 3) rank3 += 1;
+		else if (rank == 4) rank4 += 1;
+
+	list[num] totals = [rank4, rank3, rank2, rank1];
+
+	return [ ((i / numUnits) * 100) | i <- totals];
 
 }
