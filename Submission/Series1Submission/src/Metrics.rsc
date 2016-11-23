@@ -40,7 +40,9 @@ public void runTests(loc project)
 	*	SIG scores: volume, unit size, unit complexity, duplication
 	*
 	*/
-	println("START ANALYZING");
+	gc();	//garbage collect
+	num startTime = getMilliTime();
+	println("BEGINNING ANALYSIS");
 	println("---");
 	//create the M3 model from the given project
 	model = createM3FromEclipseProject(project);
@@ -53,7 +55,7 @@ public void runTests(loc project)
 	
 	println("VOLUME
 			'---
-			'Project volumen:	<dupsAndLines.total>
+			'Project volume:	<dupsAndLines.total>
 			'Comment ratio :	<commentRatio>");
 	
 	//get duplicate score
@@ -78,6 +80,7 @@ public void runTests(loc project)
 	{
 		tRank = getTestCoverageMetrics(csvloc1);
 	}
+	else tRank = 0;
 		
 	anRank = makeAnalysabilityRank(vRank,dRank,sRank,tRank);
 	chRank = makeChangeabilityRank(cRank,dRank);
@@ -93,7 +96,9 @@ public void runTests(loc project)
 			'Stability score    : 	<makeRankStr(stRank)>
 			'Testability score  : 	<makeRankStr(teRank)>
 			'                    __________
-			'Maintainability score:	<makeRankStr(maRank)>");
+			'Maintainability score:	<makeRankStr(maRank)>
+			'
+			'FINISHED. After <(getMilliTime() - startTime) / 1000>s");
 }
 
 public int makeAnalysabilityRank(num vRank, num dRank, num sRank, num tRank)
@@ -124,7 +129,6 @@ public int makeMaintainabilityRank(num anRank, num chRank, num stRank, num teRan
 	num average = (anRank + chRank + stRank + teRank)/4;
 	return round(average);
 }
-
 
 public str makeRankStr(int rank)
 {
