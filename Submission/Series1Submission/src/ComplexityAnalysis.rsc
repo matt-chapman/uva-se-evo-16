@@ -123,7 +123,7 @@ public int getComplexity(loc l, M3 model)
         	complexity += 1; }
     	case \try(_,_): {				//try
         	complexity += 1; }
-    	case \try(_,_,_): {				//try finally
+    	case \try(_,_,\finally): {		//try finally
         	complexity += 1; }
     	case \catch(_,_): {				//catch
         	complexity += 1; }
