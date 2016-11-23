@@ -28,7 +28,7 @@ public tuple[int,int] runComplexityAnalysis(M3 model)
 	
 	totalLines = sum(sizes);	
 	
-	list[num] uSizeRanks = makeUnitSizeRank(sizes, numUnits);
+	//list[num] uSizeRanks = makeUnitSizeRank(sizes, numUnits);
 	
 	
 	//generate tuple with LOC and complexity
@@ -46,15 +46,19 @@ public tuple[int,int] runComplexityAnalysis(M3 model)
 	num percentageComplex = (sum([0.00]+complex) / totalLines) * 100;
 	num percentageUntestable = (sum([0.00]+untestable) / totalLines) * 100;
 	
+	unitSizePercents = makeUnitSizePercents(sizes, numUnits);
+	unitSizeRank = makeUnitSizeRank(unitSizePercents);
+	
 	//output metrics
 	println("
 			'UNIT SIZE
 			'---
 			'Units in project: <numUnits>
 			'---
-			'Smallest unit	 				: <min(sizesNoZeroes)> LOC
-			'Largest unit    				: <max(sizesNoZeroes)> LOC
-			'Average unit size				: <(sum(sizes) / size(sizes))> LOC
+			'Units in low risk category	 		: <round(unitSizePercents[0], 0.01)>%
+			'Units in med risk category    			: <round(unitSizePercents[1], 0.01)>%
+			'Units in high risk category			: <round(unitSizePercents[2], 0.01)>%
+			'Units in v.high risk category			: <round(unitSizePercents[3], 0.01)>%
 			'
 			'UNIT COMPLEXITY
 			'---
@@ -65,7 +69,7 @@ public tuple[int,int] runComplexityAnalysis(M3 model)
 
 	//println("SIG SCORE COMPLEXITY = <>");
 	
-	return <makeComplexityRank(percentageSimple, percentageMore, percentageComplex, percentageUntestable),makeComplexityRank(uSizeRanks[0],uSizeRanks[1],uSizeRanks[2],uSizeRanks[3])>;
+	return <makeComplexityRank(percentageSimple, percentageMore, percentageComplex, percentageUntestable), unitSizeRank>;
 	
 }
 
@@ -166,7 +170,31 @@ public list[int] calcUnitSizeRanks(list[int] units)
 			append 1;
 }
 
-public list[num] makeUnitSizeRank(list[int] units, num numUnits)
+public int makeUnitSizeRank(list[num] percents)
+{
+	if( percents[1] <= 25.0 && percents[2] == 0.0 && percents[3] == 0.0 )
+	{
+		return 4;
+	}
+	else if ( percents[1] < 30.0 && percents[2] <= 5 && percents[3] == 0.0 )
+	{
+		return 3;
+	}
+	else if ( percents[1] < 40 && percents[2] < 10 && percents[3] == 0.0 )
+	{
+		return 2;
+	}
+	else if ( percents[1] < 50.0 && percents[2] < 15.0 && percents[3] <= 5.0 )
+	{
+		return 1;
+	}
+	else if (percents[1] > 50.0 && percents[2] > 15.0 && percents[3] > 5.0)
+	{
+		return 0;
+	}
+}
+
+public list[num] makeUnitSizePercents(list[int] units, num numUnits)
 {
 
 	//map[int rank, int j] mapOfRanks = distribution(calcUnitSizeRanks(units));
@@ -185,6 +213,9 @@ public list[num] makeUnitSizeRank(list[int] units, num numUnits)
 
 	list[num] totals = [rank4, rank3, rank2, rank1];
 
-	return [ ((i / numUnits) * 100) | i <- totals];
+	//return [ ((i / numUnits) * 100) | i <- totals];
+	
+	return for (total <- totals) append ((total/numUnits) * 100);
 
 }
+
