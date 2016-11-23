@@ -11,7 +11,7 @@ Run `runTests(x)` to execute the metric analysis, where `x` is either `project2`
 
 The tests will execute and output metrics, followed by SIG scores for each aspect of maintainability.
 
-#### Caveats
+### Caveats
 
 The code has the following considerations that need to be taken into account while reading the results.
 
