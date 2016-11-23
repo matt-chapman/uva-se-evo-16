@@ -5,6 +5,7 @@ import lang::java::jdt::m3::Core;
 import analysis::m3::AST;
 import lang::java::jdt::m3::AST;
 import util::Benchmark;
+import util::Math;
 import Set;
 import List;
 import IO;
@@ -46,21 +47,21 @@ public tuple[int,int] runComplexityAnalysis(M3 model)
 	num percentageUntestable = (sum([0.00]+untestable) / totalLines) * 100;
 	
 	//output metrics
-	println("");
-	println("UNIT SIZE");
-	println("---");
-	println("Units in project: <numUnits>");
-	println("---");
-	println("Smallest unit: <min(sizesNoZeroes)>");
-	println("Largest unit: <max(sizesNoZeroes)>");
-	println("Average unit size: <(sum(sizes) / size(sizes))>");
-	println("");
-	println("UNIT COMPLEXITY");
-	println("---");
-	println("% LOC in simple units (not much risk): <percentageSimple>");
-	println("% LOC in more complex units (moderate risk): <percentageMore>");
-	println("% LOC in complex units (high risk): <percentageComplex>");
-	println("% LOC in untestable units (very high risk): <percentageUntestable>");
+	println("
+			'UNIT SIZE
+			'---
+			'Units in project: <numUnits>
+			'---
+			'Smallest unit	 				: <min(sizesNoZeroes)> LOC
+			'Largest unit    				: <max(sizesNoZeroes)> LOC
+			'Average unit size				: <(sum(sizes) / size(sizes))> LOC
+			'
+			'UNIT COMPLEXITY
+			'---
+			'LOC in simple units (not much risk)		: <round(percentageSimple,0.01)>% 
+			'LOC in more complex units (moderate risk)	: <round(percentageMore,0.01)>%
+			'LOC in complex units (high risk)		: <round(percentageComplex,0.01)>%
+			'LOC in untestable units (very high risk)	: <round(percentageUntestable,0.01)>%");
 
 	//println("SIG SCORE COMPLEXITY = <>");
 	

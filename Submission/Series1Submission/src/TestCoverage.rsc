@@ -5,6 +5,7 @@ import List;
 import IO;
 import String;
 import lang::csv::IO;
+import util::Math;
 
 public num getTestCoverageMetrics(loc csvloc)
 {
@@ -25,14 +26,14 @@ public num getTestCoveragePercent(list[num] instructionsCoveredList, list[num] i
 	num instructionsTotal = instructionsCovered + instructionsMissed;
 	
 	percentCoverage = (instructionsCovered / instructionsTotal) * 100;
-	println("");
-	println("TEST COVERAGE");
-	println("---");
-	println("Total instructions to be tested: <instructionsTotal>");
-	println("Total instructions actually Tested: <instructionsCovered>");
-	println("Total instructions missed: <instructionsMissed>");
-	println("Percentage test coverage: <percentCoverage>");
-	println("---");
+	println("
+			'TEST COVERAGE
+			'---
+			'Total instructions to be tested			: <instructionsTotal> Java bytecode instructions
+			'Total instructions actually Tested		: <instructionsCovered> Java bytecode instructions
+			'Total instructions missed			: <instructionsMissed> Java bytecode instructions
+			'Percentage test coverage			: <round(percentCoverage,0.01)>%
+			'");
 	return percentCoverage;
 }
 

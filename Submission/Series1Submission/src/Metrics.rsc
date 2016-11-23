@@ -42,31 +42,37 @@ public void runTests(loc project)
 	*/
 	gc();	//garbage collect
 	num startTime = getMilliTime();
-	println("BEGINNING ANALYSIS");
-	println("---");
+	println("BEGINNING ANALYSIS
+			'---");
+			
 	//create the M3 model from the given project
 	model = createM3FromEclipseProject(project);
 	
 	//run Duplicate and volume analysis
 	tuple[num total,num dup, num com] dupsAndLines = countDuplicatesAndLines(project);
 	
-	num commentRatio = (dupsAndLines.com / dupsAndLines.total)*100;
-	
+	num commentRatio = round((dupsAndLines.com / dupsAndLines.total)*100,0.01);
+	num duplicationRatio = getDuplicatePercentage(dupsAndLines);
 	
 	println("VOLUME
 			'---
-			'Project volume:	<dupsAndLines.total>
-			'Comment ratio :	<commentRatio>");
+			'Project volume					: <dupsAndLines.total> LOC
+			'Comment ratio 					: <commentRatio>%
+			'
+			'DUPLICATION
+			'---
+			'Number of duplicates found  			: <dupsAndLines.dup> codeblocks
+			'Percentage of duplicate code			: <round(duplicationRatio,0.01)>%");
+	
 	
 	//get duplicate score
-	dRank = getDuplicateRanking(getDuplicatePercentage(dupsAndLines));
+	dRank = getDuplicateRanking(duplicationRatio);
 	
 	//get volume score
 	vRank = makeVolumeRank(dupsAndLines.total);
 	//run complexity analysis - prints details directly
-	//INCLUDES OUTPUT OF UNIT SIZES
-	tuple[int cR, int suR] cResults = runComplexityAnalysis(model);
-	
+	//INCLUDES OUTPUT OF UNIT SIZES	
+	tuple[int cR, int suR] cResults = runComplexityAnalysis(model);	
 	cRank = cResults.cR;
 	sRank = cResults.suR;
 	
@@ -91,12 +97,12 @@ public void runTests(loc project)
 	
 	println("SIG SCORES
 			'---
-			'Analysability score: 	<makeRankStr(anRank)>
-			'Changeability score: 	<makeRankStr(chRank)>
-			'Stability score    : 	<makeRankStr(stRank)>
-			'Testability score  : 	<makeRankStr(teRank)>
-			'                    __________
-			'Maintainability score:	<makeRankStr(maRank)>
+			'Analysability score				: <makeRankStr(anRank)>
+			'Changeability score				: <makeRankStr(chRank)>
+			'Stability score    				: <makeRankStr(stRank)>
+			'Testability score  				: <makeRankStr(teRank)>
+			'                   				 ______
+			'Maintainability score				: <makeRankStr(maRank)>
 			'
 			'FINISHED. After <(getMilliTime() - startTime) / 1000>s");
 }
