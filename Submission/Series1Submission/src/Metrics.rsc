@@ -46,11 +46,15 @@ public void runTests(loc project)
 	model = createM3FromEclipseProject(project);
 	
 	//run Duplicate and volume analysis
-	tuple[num total,num dup] dupsAndLines = countDuplicatesAndLines(project);
+	tuple[num total,num dup, num com] dupsAndLines = countDuplicatesAndLines(project);
 	
-	println("VOLUME");
-	println("---");
-	println("Project volume: <dupsAndLines.total>");
+	num commentRatio = (dupsAndLines.com / dupsAndLines.total)*100;
+	
+	
+	println("VOLUME
+			'---
+			'Project volumen:	<dupsAndLines.total>
+			'Comment ratio :	<commentRatio>");
 	
 	//get duplicate score
 	dRank = getDuplicateRanking(getDuplicatePercentage(dupsAndLines));
@@ -64,10 +68,16 @@ public void runTests(loc project)
 	cRank = cResults.cR;
 	sRank = cResults.suR;
 	
-	//if(project.contains == |project://HelloWorld2/src/|)
+	num tRank;
+	
+	if(project.uri == project2.uri)
+	{
 		tRank = getTestCoverageMetrics(csvloc2);
-	//else if (project == |project://hsqldb-2.3.1/hsqldb/|)
-		//tRank = getTestCoverageMetrics(csvloc2);
+	}
+	else if (project.uri == project3.uri)
+	{
+		tRank = getTestCoverageMetrics(csvloc1);
+	}
 		
 	anRank = makeAnalysabilityRank(vRank,dRank,sRank,tRank);
 	chRank = makeChangeabilityRank(cRank,dRank);

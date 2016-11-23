@@ -15,7 +15,7 @@ private set[loc] getProjectfiles(loc project) {
    return find(project, containsFile);
 }
 
-public tuple[num total,num dup] countDuplicatesAndLines(loc project)
+public tuple[num total,num dup, num com] countDuplicatesAndLines(loc project)
 {	
 	set[loc] allFiles = getProjectfiles(project);
 
@@ -24,10 +24,16 @@ public tuple[num total,num dup] countDuplicatesAndLines(loc project)
 	
 	num duplicateCount = 0;
 	num totalSize = 0;
+	num commentCount = 0;
+	
 	
 	for(file <- allFiles){
 	
-		list[tuple[str string, loc location]] fileLines = filterLines(file);
+		tuple[num comments, list[tuple[str string, loc location]] fLines] lines = filterLines(file);
+		
+		commentCount += lines.comments;
+		fileLines = lines.fLines;
+		
 		int searchIndex = 0;
 		fileLinesSize = size(fileLines);
 		totalSize += fileLinesSize;
@@ -63,7 +69,7 @@ public tuple[num total,num dup] countDuplicatesAndLines(loc project)
 	}
 	//num procent = ((duplicateCount*6)/(totalSize))*100;
 	//println("Total line count: <totalSize>, <duplicateCount>(<procent>%) duplicate lines, Ranking: <getDuplicateRanking(procent)>");
-	return <totalSize,duplicateCount>;
+	return <totalSize,duplicateCount,commentCount>;
 }
 
 
@@ -75,7 +81,7 @@ private str getSixLines(list[tuple[str string,loc location]] lines, int startInd
 	else return "";
 }
 
-public num getDuplicatePercentage(tuple[num total, num dup] metrics)
+public num getDuplicatePercentage(tuple[num total, num dup, num com] metrics)
 {
 	percentDuplicated = ((metrics.dup*6)/(metrics.total))*100;
 	
@@ -106,20 +112,28 @@ public int makeSizeRanking(num lines)
 	return 0;
 }
 
-public list[tuple[str,loc]] filterLines(loc file)
+public tuple[num, list[tuple[str,loc]]] filterLines(loc file)
 {
 	fileLines = readFileLines(file);
 	fileOffset = 0;
 	
+	commentCount = 0;
+	
 	list[tuple[str,loc]] filteredLines = [];
 	
 	for (s <- fileLines){ 
-		if(!isWhiteSpace(s) && !isComment(s)){
-			filteredLines += <s,file(fileOffset,size(s),<0,0>,<0,0>)>;
+		if(!isWhiteSpace(s)){
+			if(!isComment(s)){
+				filteredLines += <s,file(fileOffset,size(s),<0,0>,<0,0>)>;
+			}
+			else
+			{
+				commentCount += 1;
+			}
 		}
 		fileOffset +=  2 + size(s);
 	}
-	return filteredLines;
+	return <commentCount, filteredLines>;
 }
 
 private bool isWhiteSpace(str s){
