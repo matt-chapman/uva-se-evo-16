@@ -51,7 +51,7 @@ public void runTests(loc project)
 	//run Duplicate and volume analysis
 	tuple[num total,num dup, num com] dupsAndLines = countDuplicatesAndLines(project);
 	
-	num commentRatio = round((dupsAndLines.com / dupsAndLines.total)*100,0.01);
+	num commentRatio = round((dupsAndLines.com / (dupsAndLines.total+dupsAndLines.com))*100,0.01);
 	num duplicationRatio = getDuplicatePercentage(dupsAndLines);
 	
 	println("VOLUME
