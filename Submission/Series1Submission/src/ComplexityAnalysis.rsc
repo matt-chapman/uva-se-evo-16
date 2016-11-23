@@ -117,6 +117,14 @@ public int getComplexity(loc l, M3 model)
         	complexity += 1; }	
         case \do(_,_): {				//do while
         	complexity += 1; }
+    	case \try(_,_): {				//try
+        	complexity += 1; }
+    	case \try(_,_,_): {				//try finally
+        	complexity += 1; }
+    	case \catch(_,_): {				//catch
+        	complexity += 1; }
+    	case \throw(_): {				//throw
+        	complexity += 1; }
 	}
 	
 	return complexity;

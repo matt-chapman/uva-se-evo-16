@@ -62,13 +62,8 @@ public tuple[num total,num dup, num com] countDuplicatesAndLines(loc project)
 				nonDuplicates += (duplicateString : fileLines[searchIndex].location);
 				searchIndex += 1;
 			}
-			
-			//println("Duplicatecount: <duplicateCount>");
-			
 		}
 	}
-	//num procent = ((duplicateCount*6)/(totalSize))*100;
-	//println("Total line count: <totalSize>, <duplicateCount>(<procent>%) duplicate lines, Ranking: <getDuplicateRanking(procent)>");
 	return <totalSize,duplicateCount,commentCount>;
 }
 

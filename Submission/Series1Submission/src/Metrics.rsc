@@ -62,6 +62,7 @@ public void runTests(loc project)
 			'DUPLICATION
 			'---
 			'Number of duplicates found  			: <dupsAndLines.dup> codeblocks
+			'Duplicate lines of code				: <dupsAndLines.dup*6> LOC
 			'Percentage of duplicate code			: <round(duplicationRatio,0.01)>%");
 	
 	
@@ -94,6 +95,16 @@ public void runTests(loc project)
 	teRank = makeTestabilityRank(cRank,sRank,tRank);
 	
 	maRank = makeMaintainabilityRank(anRank,chRank,stRank,teRank);
+	
+	println("RANKING
+			'---
+			'Volume ranking					: <makeRankStr(vRank)>
+			'CC ranking					: <makeRankStr(cRank)>
+			'Duplication ranking				: <makeRankStr(dRank)>
+			'Unit size ranking				: <makeRankStr(sRank)>
+			'Testing ranking					: <makeRankStr(tRank)>
+			'");
+	
 	
 	println("SIG SCORES
 			'---
