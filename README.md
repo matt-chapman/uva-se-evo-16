@@ -19,3 +19,6 @@ The code has the following considerations that need to be taken into account whi
 - Unit size metrics are calculated, but a risk profile is not provided. This was due to us being unable to locate documentation to back up the selection of risk profile boundaries, and the various materials we did check did not agree with each other.
 - Automated testing is not present, but we did run tests for correctness by creating a `HelloWorld` project that had known properties in terms of line count (with and without comments), unit size and cyclomatic complexity. This means we could have implemented unit tests to ensure the correctness of our code, if we did not have time constraints.
 - Unit test coverage is calculated by running the unit tests in the project with `EclEmma` - and exporting the resulting test session. This export is then parsed using Rascal-MPL, and the resulting figures used to provide a rank for test quality.
+- Running metrics against `hsqldb` will result in a **crash** unless the following is carried out in the hsqldb project:
+  * In `ValidatingResourceBundle.java` line 51 change `Class<? extends Enum<?>>`  to `Class`.
+  * In `ValidatingResourceBundle.java` line 167 change the type of `e` to `Object`.
