@@ -1,7 +1,14 @@
 module Series1	
 
 import lang::java::m3::Core;
+import lang::java::m3::AST;
 import lang::java::jdt::m3::Core;
+import lang::java::jdt::m3::AST;
+
+import lang::java::m3::AST;
+import lang::java::m3::Core;
+import lang::java::jdt::m3::Core;
+import lang::java::jdt::m3::AST;
 
 import analysis::m3::AST;
 import util::Resources;
@@ -18,31 +25,39 @@ public loc project = |project://HelloWorld2/src/|;
 public loc project1 = |project://hsqldb-2.3.1/hsqldb/|;
 public loc project2 = |project://smallsql0.21_src/src/|;
 
+data Duplicate = Duplicate(str content, loc location, int searchIndex);
+
 set[loc] getProjectfiles(loc project) { 
    bool containsFile(loc d) = isFile(d) ? (d.extension == "java") : false;
    return find(project, containsFile);
 }
 
-public void analyze(loc project)
+public void analyze(loc project3)
 {
 	startTime = getMilliTime();
-	countDuplicates(getProjectfiles(project));
+	//asts = createAstsFromEclipseProject(project3, true);
+	//iprintln(asts);
+	//println(asts);
+	countDuplicates(getProjectfiles(project3));
 	println("Analyzing took <getMilliTime() - startTime>ms");
 }
 
 public num countDuplicates(set[loc] allFiles)
 {	
-	list[tuple[str string, loc location]] duplicates = [];
-	map[str, loc] nonDuplicates = ();
+	list[Duplicate] duplicates = [];
+	map[str, list[Duplicate]] allLines = ();
+	map[str, Duplicate] nonDuplicates = ();
 	
 	num duplicateCount = 0;
 	num totalSize = 0;
 	
 	for(file <- allFiles){
 	
-		list[tuple[str string, loc location]] fileLines = filterLines(file);
+		list[Duplicate] fileLines = filterLines(file);
 		int searchIndex = 0;
 		fileLinesSize = size(fileLines);
+		allLines += (file.uri : fileLines);
+		
 		totalSize += fileLinesSize;
 		
 		while(searchIndex < fileLinesSize-5)
@@ -50,7 +65,7 @@ public num countDuplicates(set[loc] allFiles)
 			duplicateString = getSixLines(fileLines, searchIndex);
 			
 			// Calculate the length of the 6 lines
-			fileLines[searchIndex].location.length = (fileLines[searchIndex+5].location.offset +size(fileLines[searchIndex+5].string)) - fileLines[searchIndex].location.offset;
+			fileLines[searchIndex].location.length = (fileLines[searchIndex+5].location.offset +size(fileLines[searchIndex+5].content)) - fileLines[searchIndex].location.offset;
 			
 			if(searchIndex < fileLinesSize && duplicateString != "" && (duplicateString in nonDuplicates))
 			{ 
@@ -66,7 +81,7 @@ public num countDuplicates(set[loc] allFiles)
 				searchIndex += 5;
 			}
 			else{				
-				nonDuplicates += (duplicateString : fileLines[searchIndex].location);
+				nonDuplicates += (duplicateString : fileLines[searchIndex]);
 				searchIndex += 1;
 			}
 			
@@ -74,15 +89,29 @@ public num countDuplicates(set[loc] allFiles)
 			
 		}
 	}
+	
+	for(dup <- duplicates)
+	{
+		list[Duplicate] fileLns = allLines[dup.location.uri];
+		
+		//println(fileLns[dup.searchIndex].content);
+		//println(dup.content);
+		
+		//println(nonDuplicates[getSixLines(fileLns, dup.searchIndex)]);
+		original = nonDuplicates[getSixLines(fileLns, dup.searchIndex)];
+		println(allLines[original.location.uri])[original.searchIndex].content;
+		println(dup.location);
+	}
+	//print(duplicates)
 	num procent = ((duplicateCount*6)/(totalSize))*100;
 	println("Total line count: <totalSize>, <duplicateCount>(<procent>%) duplicate lines, Ranking: <getDuplicateRanking(procent)>");
 	return duplicateCount;
 }
 
-public str getSixLines(list[tuple[str string,loc location]] lines, int startIndex)
+public str getSixLines(list[Duplicate] lines, int startIndex)
 {
 	if(startIndex+5 < size(lines)){
-		return "<lines[startIndex].string><lines[startIndex+1].string><lines[startIndex+2].string><lines[startIndex+3].string><lines[startIndex+4].string><lines[startIndex+5].string>";
+		return "<lines[startIndex].content><lines[startIndex+1].content><lines[startIndex+2].content><lines[startIndex+3].content><lines[startIndex+4].content><lines[startIndex+5].content>";
 	}
 	else return "";
 }
@@ -96,18 +125,20 @@ public int getDuplicateRanking(num percentage)
 	return 0;
 }
 
-public list[tuple[str,loc]] filterLines(loc file)
+public list[Duplicate] filterLines(loc file)
 {
 	fileLines = readFileLines(file);
 	fileOffset = 0;
-	
-	list[tuple[str,loc]] filteredLines = [];
+	sIndex = 0;
+	list[Duplicate] filteredLines = [];
 	
 	for (s <- fileLines){ 
 		if(!isWhiteSpace(s) && !isComment(s)){
-			filteredLines += <s,file(fileOffset,size(s),<0,0>,<0,0>)>;
+			filteredLines += Duplicate(s,file(fileOffset,size(s),<0,0>,<0,0>),sIndex);
+			sIndex = sIndex + 1;
 		}
-		fileOffset +=  2 + size(s);
+		fileOffset +=  1 + size(s);
+		
 	}
 	return filteredLines;
 }
