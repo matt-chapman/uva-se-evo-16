@@ -3,7 +3,9 @@ module HelloVis
 import IO;
 import vis::Figure;
 import vis::Render;
+import util::Editors;
 import List;
+import vis::KeySym;
 
 loc file1 = |project://Series2-MC/src/HelloVis.rsc|;
 loc file2 = |project://HelloWorld2/src/HelloWorld2.java|;
@@ -12,8 +14,6 @@ list[loc] clones2 = [|project://HelloWorld2/src/HelloWorld2.java|(279,51,<1,6>,<
 num filesize1 = 87.00;
 num filesize2 = 36.00;
 
-//loc file2 = ;
-
 public void runTest()
 {
 	figure1 = makeFileVis(file1, clones1, filesize1);
@@ -21,68 +21,37 @@ public void runTest()
 	
 	list[Figure] figures = [figure1, figure2];
 	
-	render(hcat(figures));
+	render("Duplication Visualisation", hcat(figures, hgap(30)));
 }
 
 public Figure makeFileVis(loc file, list[loc] clones, num fileSize)
 {
-	container = box(size(100, fileSize), resizable(false, false));
-	
-	render("container <file.file>", container);
+	container = box(size(100, fileSize), resizable(true, true));
 	
 	cloneBoxBegins = for (clone <- clones) append clone.begin.line;
 	cloneBoxEnds = for (clone <- clones) append clone.end.line;
 	cloneBoxBounds = zip(cloneBoxBegins, cloneBoxEnds);
 	
 	//generate the boxes showing the clones
-	cloneBoxes = for (bounds <- cloneBoxBounds) append (box( resizable(false, false), size(100, (bounds.second - bounds.first)), fillColor("Red"), valign(bounds.first / fileSize), onMouseEnter(void () { println("Entering <file.file>"); }), onMouseExit(void () { println("Leaving <file.file>"); })));
+	cloneBoxes = for (bounds <- cloneBoxBounds) append ( box
+	(
+			resizable(true, false),
+			size(100, (bounds.second - bounds.first)),
+			fillColor("Red"),
+			valign(bounds.first / fileSize),
+			onMouseEnter(void () { println("Entering <file.file>"); }),
+			onMouseExit(void () { println("Leaving <file.file>"); }),
+			onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers) { edit(clones1[0]); return true; }
+			)));
 	
 	//compose the above into a single figure
-	cloneBoxesFigure = vcat(cloneBoxes, vsize(fileSize), resizable(false, false));
+	cloneBoxesFigure = vcat(cloneBoxes, vsize(fileSize), resizable(true, false));
 	
 	//overlay this on the container box
-	cloneBoxesOverlaid = overlay([container, cloneBoxesFigure], resizable(false, false));
+	cloneBoxesOverlaid = overlay([container, cloneBoxesFigure], resizable(true, true));
 	
 	//add the filename
-	finalFigure = vcat([text(file.file, top())] + cloneBoxesOverlaid, resizable(false, false));
+	finalFigure = vcat([text(file.file, top())] + cloneBoxesOverlaid, resizable(true, false));
 
 	return finalFigure;
 }
-
-//public void runHelloVis()
-//{
-//
-//	//main box
-//	container = box(size(100, 300), resizable(false, false));
-//
-//	//boxes for clones
-//	b0 = box(size(100,50), resizable(false, false), fillColor("Red"), valign(0.3), hsize(50));
-//	b1 = box(size(100,50), resizable(false, false), fillColor("Green"), valign(0.8), hsize(50));
-//
-//	b2 = box(size(100,50), resizable(false, false), fillColor("Red"), valign(0.1), hsize(50));
-//	b3 = box(size(100,50), resizable(false, false), fillColor("Green"), valign(0.4), hsize(50));
-//
-//	//columns for files, with clones as children
-//	file1 = overlay([container, b0, b1]);
-//	file2 = overlay([container, b1, b2]);
-//	file3 = overlay([container]);;
-//
-//	//list files
-//	files = [file1, file2, file3];
-//
-//	//make a slider to scale vertically
-//	slider = scaleSlider(int() { return 0; },     					//min bound
-//                                    int () { return 300; },  		//max bound
-//                                    int () { return n; },			//current value
-//                                    void (int s) {n = s;},    
-//                        			width(100), resizable(false, false));
-//    
-//    //row1 = [ slider ];									//scaling slider
-//    row2 = [text("File1"), text("File2"), text("File3")];	//file names
-//	row3 = [ file1, file2, file3 ];							//file outlines
-//       		
-//	render(grid([/*row1,*/ row2, row3]));					//render the grid
-//    
-//}
-
-
