@@ -31,8 +31,9 @@ public void renderClones(map[str, list[Duplicate]] clones, bool filterd)
 	figureList = for (item <- clones) append makeFileVis(item, clones[item], size(allFiles[item]), filterd);
 	
 	widthVal = size(figureList) * 100;
-	
-	render(filterd ? "Clone class" : "Duplication Visualisation", hcat(figureList, top(), resizable(false, false), fillColor("aquamarine"), hgap(15)) );
+	Figure fileFigure = hcat(figureList, top(), resizable(false, false), fillColor("aquamarine"), hgap(15));
+	Figure upperBox = box(text("Hallo", align(0,0)),size(250,150));
+	render(filterd ? "Clone class" : "Duplication Visualisation", vcat([upperBox, fileFigures]));
 }
 
 public map[str, list[Duplicate]] formData()
