@@ -26,6 +26,7 @@ data Duplicate = Duplicate(FileLine line, loc location, int length);
 
 public map[str, list[FileLine]] allFiles = ();
 public map[str, list[Duplicate]] dupClasses = ();
+public map[str, list[Duplicate]] fileDups = ();
 
 public loc project = |project://HelloWorld2/src/|;
 public loc project1 = |project://hsqldb-2.3.1/hsqldb/|;
@@ -49,6 +50,8 @@ public num getDuplicates()
 	list[Duplicate] duplicates = [];
 	map[str, FileLine] nonDuplicates = ();
 	
+	dupClasses = ();
+	
 	num duplicateCount = 0;
 	num totalSize = 0;
 	
@@ -62,8 +65,6 @@ public num getDuplicates()
 		while(searchIndex < fileLinesSize-5)
 		{			
 			duplicateString = getSixLines(fileLines[searchIndex]);
-			// Calculate the length of the 6 lines
-			//fileLines[searchIndex].location.length = (fileLines[searchIndex+5].location.offset +size(fileLines[searchIndex+5].content)) - fileLines[searchIndex].location.offset;
 			
 			if(searchIndex < fileLinesSize && duplicateString != "" && (duplicateString in nonDuplicates))
 			{ 
@@ -117,15 +118,17 @@ public num getDuplicates()
 	growDuplicates();
 	setDuplicateLocations();
 	
-	for(dClass <- dupClasses)
-	{
-		dSize = size(dupClasses[dClass]);
-		println("Classcount <dSize>");
-		//if(dSize >= 3)
-		//{
-			for(dLoc <- dupClasses[dClass]) println("<dLoc.location> lenght:<dLoc.length>");
-		//}
-	}
+	while(filterDuplicates() != 0) {;}
+	
+	//for(dClass <- dupClasses)
+	//{
+	//	dSize = size(dupClasses[dClass]);
+	//	println("Classcount <dSize>");
+	//	//if(dSize >= 3)
+	//	//{
+	//		for(dLoc <- dupClasses[dClass]) println("<dLoc.location> lenght:<dLoc.length>");
+	//	//}
+	//}
 	num procent = ((duplicateCount*6)/(totalSize))*100;
 	println("Total line count: <totalSize>, <duplicateCount>(<procent>%) duplicate lines, in <size(dupClasses)> Clone Classes");
 	return duplicateCount;
@@ -164,10 +167,54 @@ public void growDuplicates()
 	}
 }
 
-public void filterDuplicates()
+public void generateFileDups()
 {
-	
+	fileDups = ();
+	for(dClass <- dupClasses)
+	{
+			for(dLoc <- dupClasses[dClass])
+			{
+				if(dLoc.location.uri notin fileDups)
+				{
+					fileDups[dLoc.location.uri] = [dLoc];
+				}
+				else
+				{
+					fileDups[dLoc.location.uri] += dLoc;
+				}
+			}
+	}
 	return;
+}
+
+public int filterDuplicates()
+{
+	generateFileDups();
+	int count = 0;
+	for(file <- fileDups)
+	{
+			//println(file);
+			fileDups[file] = sort(fileDups[file], bool(Duplicate a, Duplicate b){ return a.location.offset < b.location.offset; });
+			int index = 0;
+			while(index+1 < size(fileDups[file]))
+			{
+				//println(dupli.location);
+				int endDupli = fileDups[file][index].location.offset + fileDups[file][index].location.length;
+				Duplicate nextDup = fileDups[file][index+1];
+				int endNext = nextDup.location.offset + nextDup.location.length;
+				if(endNext <= endDupli)
+				{
+					//Contained
+					println("Contained! 	<nextDup.line.searchIndex>-<nextDup.line.searchIndex + nextDup.length> 		<nextDup.location>");
+					println("In 		<fileDups[file][index].line.searchIndex>-<fileDups[file][index].line.searchIndex + fileDups[file][index].length>			<fileDups[file][index].location>");
+					removeDuplicate(nextDup);
+					count += 1;
+				}
+				index += 1;
+			} 
+	}	
+	println("Found <count> duplicate duplicates");
+	return count;
 }
 
 public tuple[bool, bool] growPossible(Duplicate dup1, Duplicate dup2)
@@ -217,6 +264,23 @@ public str getNextLine(Duplicate dup)
 	}
 }
 
+public void removeDuplicate(Duplicate dup)
+{
+	str key = getSixLines(dup.line);
+	list[Duplicate] dupClass = dupClasses[key];
+	int index = 0;
+	while(index < size(dupClass))
+	{
+		if(dup.location == dupClass[index].location)
+		{
+			dupClasses[key] = delete(dupClasses[key], index);
+			return;
+		}
+		index += 1;
+	}
+	return;	
+}
+
 public void setDuplicateLocations()
 {
 	for(dClass <- dupClasses)
@@ -247,6 +311,7 @@ public str getSixLines(FileLine line)
 
 public void filterProjectFiles(loc projectName)
 {
+	allFiles = ();
 	allProjectFiles = getProjectFiles(projectName);
 	for(file <- allProjectFiles)
 	{	
