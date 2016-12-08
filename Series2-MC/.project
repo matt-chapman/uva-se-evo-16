@@ -37,4 +37,11 @@
 		<nature>org.eclipse.pde.PluginNature</nature>
 		<nature>rascal_eclipse.term_nature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>src/Series2.rsc</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/DJ/Series%202/src/Series2.rsc</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>
