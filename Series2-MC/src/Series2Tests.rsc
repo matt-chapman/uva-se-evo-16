@@ -14,6 +14,7 @@ test bool emptyFileClones()
 			
 }
 
+//test for known clones
 test bool knownFileClones()
 {
 	loc knownClones = |project://HelloWorld2/src/HelloWorld2.java|;
@@ -21,6 +22,7 @@ test bool knownFileClones()
 	return true;
 }
 
+//run against the large project
 test bool largeProjectTest()
 {
 	loc largeProject = |project://smallsql0.21_src|;
