@@ -9,32 +9,29 @@ import vis::KeySym;
 import Series2;
 import String;
 
-loc file1 = |project://Series2-MC/src/HelloVis.rsc|;
-loc file2 = |project://HelloWorld2/src/HelloWorld2.java|;
-list[loc] clones1 = [|project://Series2-MC/src/HelloVis.rsc|(279,51,<12,6>,<14,47>), |project://Series2-MC/src/HelloVis.rsc|(279,51,<27,6>,<33,47>)];
-list[loc] clones2 = [|project://HelloWorld2/src/HelloWorld2.java|(279,51,<1,6>,<28,47>)];
-
-public loc testLoc = file1;
-
+//run a test render on the last analyzed project
 public void runTest()
 {
+	//manipulate the datastructure from the analysis & render it
 	dataStructure = formData();
-
-	//fileList = for (file <- allFiles) append toLocation(file);
-	//figureList = for (item <- fileList) append makeFileVis(item, [], size(allFiles[item.uri]));
 	renderClones(dataStructure, false);
-
 }
 
-public void renderClones(map[str, list[Duplicate]] clones, bool filterd)
+//render the clone view
+public void renderClones(map[str, list[Duplicate]] clones, bool filtered)
 {
-	figureList = for (item <- clones) append makeFileVis(item, clones[item], size(allFiles[item]), filterd);
+	//for each file, render it, and it's clones
+	figureList = for (item <- clones)
+		append makeFileVis(item, clones[item], size(allFiles[item]), filtered);
 	
+	//set the viewport width
 	widthVal = size(figureList) * 100;
 	
-	render(filterd ? "Clone class" : "Duplication Visualisation", hcat(figureList, top(), resizable(false, false), fillColor("aquamarine"), hgap(15)) );
+	//make Rascal render the figures
+	render(filtered ? "Clone class" : "Duplication Visualisation", hcat(figureList, top(), resizable(false, false), fillColor("aquamarine"), hgap(15)) );
 }
 
+//manipulate the analysis data for rendering
 public map[str, list[Duplicate]] formData()
 {
 
@@ -69,32 +66,24 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool f
 	//get the bounds of the various clones
 	list[tuple[int first, int second, Duplicate clone]] cloneLocations;
 	
+	//make a tuple containing start and end locations for clone, plus the clone itself
 	cloneLocations = for (clone <- clones) append <clone.line.searchIndex, (clone.line.searchIndex + clone.length), clone>;
 	
-	println(cloneLocations);
-	
-	//generate the boxes showing the clones
-	//cloneBoxes = for (tuple[num first, num second, Duplicate clone] bounds <- cloneLocations) append ( box
-	//(		text("<bounds.first> - <bounds.second>"),
-	//		resizable(true, false),
-	//		size(100, (bounds.clone.length)),
-	//		fillColor("Red"),
-	//		valign(bounds.first / fileSize),
-	//		onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers) { println(bounds.clone.location); return true; }
-	//		))); 		
 	list[Figure] cloneBoxes = [];
-	int i = 0;		
+	int i = 0;
+	
+	//pull each clone into a new tuple for field access		
 	for (tuple[num first, num second, Duplicate clone] bounds <- cloneLocations)
 	{
-		Duplicate cln = bounds.clone;
-		cloneBoxes += box(	/*text("<bounds.first> - <bounds.second>"),*/
-				resizable(true, false),
-				size(100, (bounds.clone.length)),
-				fillColor(color("red")),
-				valign(bounds.first / fileSize),
-				hint("<bounds.clone.location>"),
-				onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers) { return filterd ? edit(bounds.clone.location) : renderClones(generateFileDups(cln), true)  ; return true; })
-				);
+		Duplicate cln = bounds.clone;	//ensure clone loc is stored locally for click listener binding
+		cloneBoxes += box(
+				resizable(true, false),				//only w resizable
+				size(100, (bounds.clone.length)),	//100 wide, height according to clone size
+				fillColor(color("red")),			//make it angry red.
+				valign(bounds.first / fileSize),	//align the box based on location in file
+				hint("<bounds.clone.location>"),	//add a hint
+				onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers) { filterd ? edit(bounds.clone.location) : renderClones(generateFileDups(cln), true)  ; return true; })
+				);		//finally, bind mousedown event. If first click, drill down one level, otherwise, show clone
 				i+=1;
 				println(bounds.clone.location);
 	}
@@ -105,5 +94,6 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool f
 	//add the filename
 	finalFigure = vcat([text(location.file, top())] + cloneBoxesOverlaid + [text("<fileSize>", bottom())], resizable(false, false), top(), vgap(5), fillColor("blue"));
 
+	//return a completed figure
 	return finalFigure;
 }
