@@ -7,7 +7,7 @@ import vis::Figure;
 import vis::Render;
 
 public str selectedProject;
-public loc projectToProcess;
+public loc projectToProcess = project2;
 
 public loc project = |project://HelloWorld2/src/|;
 public loc project1 = |project://hsqldb-2.3.1/hsqldb/|;
@@ -22,12 +22,12 @@ public void modifySelectedProject()
 
 }
 
-public Figure mainMenu()
+public void mainMenu()
 {
 	menu = hcat([
 				combo(["smallsql", "hsqldb"], void(str s){ selectedProject = s; modifySelectedProject(); }, hsize(200), resizable(false, false)),
 				button("Analyse", void(){analyze(projectToProcess); runTest();}, hsize(100), resizable(false, false))
 				], resizable(false, false));
 
-	//render("Main Menu", menu);
+	render("Main Menu", menu);
 }
