@@ -22,12 +22,17 @@ public void runTest()
 
 	//fileList = for (file <- allFiles) append toLocation(file);
 	//figureList = for (item <- fileList) append makeFileVis(item, [], size(allFiles[item.uri]));
-	
-	figureList = for (item <- dataStructure) append makeFileVis(item, dataStructure[item], size(allFiles[item]));
+	renderClones(dataStructure, false);
+
+}
+
+public void renderClones(map[str, list[Duplicate]] clones, bool filterd)
+{
+	figureList = for (item <- clones) append makeFileVis(item, clones[item], size(allFiles[item]), filterd);
 	
 	widthVal = size(figureList) * 100;
 	
-	render("Duplication Visualisation", hcat(figureList, top(), resizable(false, false), fillColor("aquamarine"), hgap(15)) );
+	render(filterd ? "Clone class" : "Duplication Visualisation", hcat(figureList, top(), resizable(false, false), fillColor("aquamarine"), hgap(15)) );
 }
 
 public map[str, list[Duplicate]] formData()
@@ -54,7 +59,7 @@ public map[str, list[Duplicate]] formData()
   	return fileDups;
 }
 
-public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize)
+public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool filterd)
 {
 	loc location = toLocation(file);
 	
@@ -81,15 +86,14 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize)
 	int i = 0;		
 	for (tuple[num first, num second, Duplicate clone] bounds <- cloneLocations)
 	{
-		loc locat = bounds.clone.location;
-		println(bounds.first / fileSize);
+		Duplicate cln = bounds.clone;
 		cloneBoxes += box(	/*text("<bounds.first> - <bounds.second>"),*/
 				resizable(true, false),
 				size(100, (bounds.clone.length)),
 				fillColor(color("red")),
 				valign(bounds.first / fileSize),
 				hint("<bounds.clone.location>"),
-				onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers) { edit(locat); return true; })
+				onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers) { return filterd ? edit(bounds.clone.location) : renderClones(generateFileDups(cln), true)  ; return true; })
 				);
 				i+=1;
 				println(bounds.clone.location);

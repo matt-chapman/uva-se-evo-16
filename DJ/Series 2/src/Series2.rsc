@@ -167,24 +167,42 @@ public void growDuplicates()
 	}
 }
 
-public void generateFileDups()
+public map[str, list[Duplicate]] generateFileDups()
 {
-	fileDups = ();
+	map[str, list[Duplicate]] fDups = ();
 	for(dClass <- dupClasses)
 	{
 			for(dLoc <- dupClasses[dClass])
 			{
-				if(dLoc.location.uri notin fileDups)
+				if(dLoc.location.uri notin fDups)
 				{
-					fileDups[dLoc.location.uri] = [dLoc];
+					fDups[dLoc.location.uri] = [dLoc];
 				}
 				else
 				{
-					fileDups[dLoc.location.uri] += dLoc;
+					fDups[dLoc.location.uri] += dLoc;
 				}
 			}
 	}
-	return;
+	return fDups;
+}
+
+public map[str, list[Duplicate]] generateFileDups(Duplicate dup)
+{
+	map[str, list[Duplicate]] fDups = ();
+	str key = getSixLines(dup.line);
+	for(dLoc <- dupClasses[key])
+	{
+		if(dLoc.location.uri notin fDups)
+		{
+			fDups[dLoc.location.uri] = [dLoc];
+		}
+		else
+		{
+			fDups[dLoc.location.uri] += dLoc;
+		}
+	}	
+	return fDups;
 }
 
 public int filterDuplicates()
