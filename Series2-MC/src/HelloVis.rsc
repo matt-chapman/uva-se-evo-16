@@ -83,7 +83,7 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize)
 	{
 		loc locat = bounds.clone.location;
 		println(bounds.first / fileSize);
-		cloneBoxes += box(	text("<bounds.first> - <bounds.second>"),
+		cloneBoxes += box(	/*text("<bounds.first> - <bounds.second>"),*/
 				resizable(true, false),
 				size(100, (bounds.clone.length)),
 				fillColor(color("red")),
@@ -94,12 +94,9 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize)
 				i+=1;
 				println(bounds.clone.location);
 	}
-			
-	//compose the above into a single figure
-	cloneBoxesFigure = vcat(cloneBoxes, vsize(fileSize), resizable(false, false), top(), fillColor("red"));
 	
 	//overlay this on the container box
-	cloneBoxesOverlaid = overlay([container, cloneBoxesFigure], resizable(false, false), top(), fillColor("green"));
+	cloneBoxesOverlaid = overlay([container] + cloneBoxes, resizable(false, false), top(), fillColor("green"));
 	
 	//add the filename
 	finalFigure = vcat([text(location.file, top())] + cloneBoxesOverlaid + [text("<fileSize>", bottom())], resizable(false, false), top(), vgap(5), fillColor("blue"));
