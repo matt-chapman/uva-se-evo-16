@@ -8,28 +8,77 @@ import List;
 import vis::KeySym;
 import Series2;
 import String;
+import MainMenu;
+
+public map[str,str] classColors = ();
+public int viewIndex = 0;
+public Duplicate selectedClone;
+
+
+
+// Tool settings
+str topBarColor = "mediumaquamarine";
+str backgroundColor = "snow";
+
+int topBarHeight = 100;
+int topRightWidth = 250;
+
+Figure overView = box();
 
 //test method
 public void runTest()
 {
-	dataStructure = formData();
-	renderClones(dataStructure, false);
+	renderClones(("":[]), false);
 }
 
 //render the clone view
 public void renderClones(map[str, list[Duplicate]] clones, bool filtered)
 {
-	//for each file (& clones) make the file visualisation
+	Figure topLeft = box();
+	Figure topRight = box();
+	Figure bottom = box();
+	if(clones != ("":[]))
+	{
+		// Project selected
+		if(filtered)
+		{
+			// Cloneclass view			
+			topLeft = box(text("getClassInfo()", align(0,0)), fillColor(topBarColor));
+			topRight = box(button("Back to overview", void(){renderClones(generateFileDups(), false);},hsize(150), hgap(25), resizable(false, false)), fillColor(topBarColor), width(topRightWidth), resizable(false,true));//box(resizable(false, true), width(250), fillColor("lightgreen"));
+			bottom = box(getCloneFigure(clones, true));
+		}
+		else
+		{
+			topLeft = box(text("getCloneMetrics()", align(0,0)), fillColor(topBarColor));
+			topRight = box(getMainMenu(), width(topRightWidth), fillColor(topBarColor), resizable(false,true));//box(resizable(false, true), width(250), fillColor("lightgreen"));
+			if(overView == box()) {overView = box(getCloneFigure(clones, false)); }
+			
+			bottom = overView;
+			
+		}
+	}
+	else
+	{
+		// Mainmenu, no project selected
+		topLeft = box(text("Clone Detection Tool", fontSize(40)), fillColor(topBarColor));
+		topRight = box(getMainMenu(), width(topRightWidth), fillColor(topBarColor), resizable(false,true));//box(resizable(false, true), width(250), fillColor("lightgreen"));
+		bottom = box(text("Please select a project to analyze"));
+	}
+	Figure top = box(hcat([(topLeft), topRight]), height(topBarHeight), resizable(true, false));	
+	render("Clone Detection Tool", (vcat([top, bottom])));
+	
+}
+
+public Figure getCloneFigure(map[str, list[Duplicate]] clones, bool filtered)
+{
+		//for each file (& clones) make the file visualisation
 	figureList = for (item <- clones) append makeFileVis(item, clones[item], size(allFiles[item]), filtered);
 	
 	widthVal = size(figureList) * 100;
 	
 	//create the visualisation by hcatting file figures
-	Figure fileFigure = hcat(figureList, top(), resizable(false, false), fillColor("aquamarine"), hgap(15));
+	return scrollable(hcat(figureList, top(), resizable(false, false), fillColor("aquamarine"), hgap(15)));
 	
-	//generate upper box for menus, render the clones
-	Figure upperBox = box(text("TODO: Menus. See MainMenu.rsc for src", align(0,0)),size(250,150));
-	render(filtered ? "Clone Class" : "Duplication Visualisation", vcat([upperBox, fileFigure]));
 }
 
 //manipulate data for rendering
@@ -78,14 +127,15 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool f
 		cloneBoxes += box(							//make the box, add to list
 				resizable(true, false),				//resizable only horizontal
 				size(100, (bounds.clone.length)),	//set size according to clone size
-				fillColor(color("red")),			//make it angry red
+				fillColor(color(getCloneClassColor(cln))),			//make it angry red
 				valign(bounds.first / fileSize),	//align according to clone pos
 				hint("<bounds.clone.location>"),	//add hint
 				onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers)
 				{
 					//if we are clicking a filtered clone, show the clone
 					//otherwise render the filtered clones
-					filtered ? edit(bounds.clone.location) : renderClones(generateFileDups(cln), true);
+					if(filtered) edit(cln.location);
+					else {renderClones(generateFileDups(cln), true);}
 					return true;
 				}
 				));
@@ -99,4 +149,30 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool f
 
 	//return the composited figure
 	return finalFigure;
+}
+
+public Figure getMainMenu()
+{
+	return vcat([
+				combo(["smallsql", "hsqldb"], void(str s){ modifySelectedProject(s); }, hsize(200), resizable(false, false)),
+				button("Analyse", void(){renderClones(generateFileDups(), false);}, hsize(100), hgap(25), resizable(false, false))
+				], resizable(false, false));
+}
+
+public void modifySelectedProject(str s)
+{
+	if (s == "smallsql")
+		projectToProcess = project2;
+	else if (s == "hsqldb")
+		projectToProcess = project1;
+}
+
+public str getCloneClassColor(Duplicate cln)
+{
+	str key = getSixLines(cln.line);
+	if(key notin classColors)
+	{
+		classColors[key] = getOneFrom(colorNames());
+	}
+	return classColors[key];
 }

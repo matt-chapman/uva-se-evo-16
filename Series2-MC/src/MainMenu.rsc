@@ -22,18 +22,18 @@ public void modifySelectedProject()
 		projectToProcess = project2;
 	else if (selectedProject == "hsqldb")
 		projectToProcess = project1;
-
 }
 
 //generate the main menu
 public void mainMenu()
 {
 	//create hcat containing combobox and button
-	menu = hcat([
-				combo(["smallsql", "hsqldb"], void(str s){ selectedProject = s; modifySelectedProject(); }, hsize(200), resizable(false, false)),
-				button("Analyse", void(){analyze(projectToProcess); runTest();}, hsize(100), resizable(false, false))
-				], resizable(false, false));
+	menu = getMainMenu();
 
 	//render the above hcat
 	render("Main Menu", menu);
 }
+
+
+
+

@@ -28,9 +28,14 @@ public map[str, list[FileLine]] allFiles = ();
 public map[str, list[Duplicate]] dupClasses = ();
 public map[str, list[Duplicate]] fileDups = ();
 
+
+
 public loc project = |project://HelloWorld2/src/|;
 public loc project1 = |project://hsqldb-2.3.1/hsqldb/|;
 public loc project2 = |project://smallsql0.21_src/src/|;
+
+public str selectedProject;
+public loc projectToProcess = project2;
 
 set[loc] getProjectFiles(loc project) { 
    bool containsFile(loc d) = isFile(d) ? (d.extension == "java") : false;
@@ -47,6 +52,7 @@ public void analyze(loc proj)
 
 public num getDuplicates()
 {	
+	println("Start Analyzing...");
 	list[Duplicate] duplicates = [];
 	map[str, FileLine] nonDuplicates = ();
 	
@@ -115,7 +121,9 @@ public num getDuplicates()
 	//	println(dup.location);
 	//}
 	//print(duplicates)
+	println("Start Growing....");
 	growDuplicates();
+	println("Growing ended");
 	setDuplicateLocations();
 	
 	while(filterDuplicates() != 0) {;}
@@ -137,15 +145,23 @@ public num getDuplicates()
 public void growDuplicates()
 {
 	bool growing = false;
-	int lenght = 6;
+	int length = 6;
+	int grow = 0;
 	while(true){
 		for(dClass <- dupClasses)
 		{
 			list[str] nextLines = [];
 			for(dup <- dupClasses[dClass])
 			{
-				nextLines += getNextLine(dup);
+				
+				if(dup.length + 1 >= length){
+					
+					nextLines += getNextLine(dup);
+				}
 			}
+			
+			if(size(nextLines) == 0) continue;
+			//println("<size(nextLines)> <length>");
 			int index = 0;
 			while(index <= size(nextLines)-1)
 			{
@@ -156,19 +172,22 @@ public void growDuplicates()
 				{
 					dupClasses[dClass][index].length += 1;
 					growing = true;
+					grow += 1;
 				}
 				index += 1;
 			}
 		}
-		println("Try again! <lenght> <growing>");
+		println("Try again! <length> Growing <grow> clones");
 		if(!growing) break;
-		lenght += 1;
+		length += 1;
+		grow = 0;
 		growing = false;
 	}
 }
 
 public map[str, list[Duplicate]] generateFileDups()
 {
+	if(dupClasses == ()) analyze(projectToProcess);
 	map[str, list[Duplicate]] fDups = ();
 	for(dClass <- dupClasses)
 	{
@@ -189,6 +208,7 @@ public map[str, list[Duplicate]] generateFileDups()
 
 public map[str, list[Duplicate]] generateFileDups(Duplicate dup)
 {
+	println(dupClasses);
 	map[str, list[Duplicate]] fDups = ();
 	str key = getSixLines(dup.line);
 	for(dLoc <- dupClasses[key])
@@ -207,7 +227,7 @@ public map[str, list[Duplicate]] generateFileDups(Duplicate dup)
 
 public int filterDuplicates()
 {
-	generateFileDups();
+	fileDups = generateFileDups();
 	int count = 0;
 	for(file <- fileDups)
 	{
@@ -223,8 +243,8 @@ public int filterDuplicates()
 				if(endNext <= endDupli)
 				{
 					//Contained
-					println("Contained! 	<nextDup.line.searchIndex>-<nextDup.line.searchIndex + nextDup.length> 		<nextDup.location>");
-					println("In 		<fileDups[file][index].line.searchIndex>-<fileDups[file][index].line.searchIndex + fileDups[file][index].length>			<fileDups[file][index].location>");
+					//println("Contained! 	<nextDup.line.searchIndex>-<nextDup.line.searchIndex + nextDup.length> 		<nextDup.location>");
+					//println("In 		<fileDups[file][index].line.searchIndex>-<fileDups[file][index].line.searchIndex + fileDups[file][index].length>			<fileDups[file][index].location>");
 					removeDuplicate(nextDup);
 					count += 1;
 				}
@@ -307,6 +327,7 @@ public void setDuplicateLocations()
 		for(dup <- dupClasses[dClass])
 		{
 			fileLines = allFiles[dup.line.location.uri];
+			//if(size(fileLines) <= dup.line.searchIndex+(dup.length-1)) println("<dupClasses[getSixLines(dup.line)]> <size(fileLines)> <dup.line.searchIndex+(dup.length-1)>");
 			lastLine = fileLines[dup.line.searchIndex+(dup.length-1)];
 			dupClasses[dClass][index].location.length = (lastLine.location.offset +size(lastLine.content)) - dup.line.location.offset;
 			index = index + 1;
