@@ -5,6 +5,7 @@ import vis::Figure;
 import vis::Render;
 import util::Editors;
 import List;
+import Map;
 import vis::KeySym;
 import Series2;
 import String;
@@ -43,13 +44,13 @@ public void renderClones(map[str, list[Duplicate]] clones, bool filtered)
 		if(filtered)
 		{
 			// Cloneclass view			
-			topLeft = box(text("getClassInfo()", align(0,0)), fillColor(topBarColor));
+			topLeft = box(text("GetCloneClassInfo()"), fillColor(topBarColor));
 			topRight = box(button("Back to overview", void(){renderClones(generateFileDups(), false);},hsize(150), hgap(25), resizable(false, false)), fillColor(topBarColor), width(topRightWidth), resizable(false,true));//box(resizable(false, true), width(250), fillColor("lightgreen"));
 			bottom = box(getCloneFigure(clones, true));
 		}
 		else
 		{
-			topLeft = box(text("getCloneMetrics()", align(0,0)), fillColor(topBarColor));
+			topLeft = box(getMetrics(), fillColor(topBarColor));
 			topRight = box(getMainMenu(), width(topRightWidth), fillColor(topBarColor), resizable(false,true));//box(resizable(false, true), width(250), fillColor("lightgreen"));
 			if(overView == box()) {overView = box(getCloneFigure(clones, false)); }
 			
@@ -81,30 +82,18 @@ public Figure getCloneFigure(map[str, list[Duplicate]] clones, bool filtered)
 	
 }
 
-//manipulate data for rendering
-public map[str, list[Duplicate]] formData()
+public Figure getMetrics()
 {
-
-	map[str,list[Duplicate]] fileDups = ();
-	int count = 0;
-	
-  	for(dClass <- dupClasses)
- 	{
-    	for(dLoc <- dupClasses[dClass])
-		{
-        	if(dLoc.location.uri notin fileDups)
-        	{
-        		fileDups[dLoc.location.uri] = [dLoc];
-        	}
-        	else
-        	{
-				fileDups[dLoc.location.uri] += dLoc;
-        	}
-      	}
-  	}
-  	
-  	return fileDups;
+	str metrics = "Results for <projectToProcess.authority>
+			'The project has <projectMetrics.lineCount> lines for codes containting <projectMetrics.numberOfClones> clones this is <0>% of the total project.
+			'The biggest clone is <projectMetrics.biggestClone.length> LOC long.
+			'There are <size(dupClasses)> clone classes. The biggest class contains <size(dupClasses[projectMetrics.biggestCloneClass])> clones.";
+	metricFig = text(metrics);
+	classClick = text("This is the biggest clone class(Click!)",fontColor("Blue"), left(),onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers){renderClones(generateFileDups(dupClasses[projectMetrics.biggestCloneClass][0]), true);return true;}));
+	cloneClick = text("This is the biggest clone(Click!)",fontColor("Blue"), left(),onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers){renderClones(generateFileDups(projectMetrics.biggestClone), true);return true;}));
+	return  vcat([metricFig, classClick, cloneClick], align(0,0));
 }
+
 
 public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool filtered)
 {
@@ -145,7 +134,7 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool f
 	cloneBoxesOverlaid = overlay([container] + cloneBoxes, resizable(false, false), top(), fillColor("green"));
 	
 	//add the filename
-	finalFigure = vcat([text(location.file, top())] + cloneBoxesOverlaid + [text("<fileSize>", bottom())], resizable(false, false), top(), vgap(5), fillColor("blue"));
+	finalFigure = vcat([text(location.file, top(), onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers){edit(location);return true;}))] + cloneBoxesOverlaid + [text("<fileSize>", bottom())], resizable(false, false), top(), vgap(5), fillColor("blue"));
 
 	//return the composited figure
 	return finalFigure;

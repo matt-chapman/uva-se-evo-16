@@ -24,9 +24,12 @@ import util::Benchmark;
 data FileLine = FileLine(str content, loc location, int searchIndex);
 data Duplicate = Duplicate(FileLine line, loc location, int length);
 
+data Metrics = Metrics(Duplicate biggestClone, int lineCount, int numberOfClones, str biggestCloneClass);
+
 public map[str, list[FileLine]] allFiles = ();
 public map[str, list[Duplicate]] dupClasses = ();
 public map[str, list[Duplicate]] fileDups = ();
+public Metrics projectMetrics = Metrics(Duplicate(FileLine("", toLocation(""), 0),toLocation(""),0), 0,0, "");
 
 
 
@@ -47,7 +50,24 @@ public void analyze(loc proj)
 	startTime = getMilliTime();
 	filterProjectFiles(proj);
 	getDuplicates();
+	projectMetrics = calculateMetrics();
 	println("Analyzing took <getMilliTime() - startTime>ms");
+}
+
+public Metrics calculateMetrics()
+{
+	Metrics metr = Metrics(Duplicate(FileLine("", toLocation(""), 0),toLocation(""),0), 0,0, "");
+	for(dClass <- dupClasses)
+	{
+		if(metr.biggestCloneClass == "" || size(dupClasses[dClass]) > size(dupClasses[metr.biggestCloneClass])) metr.biggestCloneClass = dClass;
+		for(dup <- dupClasses[dClass])
+		{				
+			metr.numberOfClones +=1;
+			if(dup.length > metr.biggestClone.length) metr.biggestClone = dup;
+		}
+	}
+	for(file <-allFiles) metr.lineCount += size(allFiles[file]);
+	return metr;
 }
 
 public num getDuplicates()
