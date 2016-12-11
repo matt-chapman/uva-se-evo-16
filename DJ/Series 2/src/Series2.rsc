@@ -141,11 +141,12 @@ public num getDuplicates()
 	//	println(dup.location);
 	//}
 	//print(duplicates)
+	println("Grow First duplicates....");
+	growFirstDups();
 	println("Start Growing....");
 	growDuplicates();
 	println("Growing ended");
 	setDuplicateLocations();
-	
 	while(filterDuplicates() != 0) {;}
 	
 	//for(dClass <- dupClasses)
@@ -162,12 +163,55 @@ public num getDuplicates()
 	return duplicateCount;
 }
 
+public void growFirstDups()
+{
+	map[str, list[Duplicate]] fDups = generateFileDups();
+	map[str, Duplicate] firstFDups = ();
+	for(file <- fDups)
+	{
+		temp = sort(fDups[file], bool(Duplicate a, Duplicate b){return a.line.location.offset < b.line.location.offset;});
+		firstFDups[file] = temp[0];
+	}
+	int length = 6;
+	for(file <- firstFDups)
+	{
+		str classStr = getSixLines(firstFDups[file].line);
+		while(true){
+			growing = false;
+			list[str] nextLines = [];
+			for(dup <- dupClasses[classStr])
+			{
+				if(dup.length + 1 >= length){				
+					nextLines += getNextLine(dup);
+				}
+			}
+			int index = 0;
+			while(index <= size(nextLines)-1)
+			{
+				list[str] temp = nextLines;
+				str tempComp = temp[index];
+				temp = delete(temp, index);
+				if(tempComp != "" && tempComp in temp)
+				{
+					dupClasses[classStr][index].length += 1;
+					growing = true;
+				}
+				index += 1;
+			}
+			if(!growing) break;
+		}
+	}
+	filterDuplicates();
+	return;	
+}
+
 public void growDuplicates()
 {
 	bool growing = false;
 	int length = 6;
 	int grow = 0;
 	while(true){
+		list[str] hitFiles = [];
 		for(dClass <- dupClasses)
 		{
 			list[str] nextLines = [];
@@ -193,11 +237,12 @@ public void growDuplicates()
 					dupClasses[dClass][index].length += 1;
 					growing = true;
 					grow += 1;
+					if(dupClasses[dClass][index].line.location.uri notin hitFiles) hitFiles += dupClasses[dClass][index].line.location.uri;
 				}
 				index += 1;
 			}
 		}
-		println("Try again! <length> Growing <grow> clones");
+		println("Still growing! Growing <grow> clones with length <length> in <size(hitFiles)> files");
 		if(!growing) break;
 		length += 1;
 		grow = 0;
@@ -228,7 +273,6 @@ public map[str, list[Duplicate]] generateFileDups()
 
 public map[str, list[Duplicate]] generateFileDups(Duplicate dup)
 {
-	println(dupClasses);
 	map[str, list[Duplicate]] fDups = ();
 	str key = getSixLines(dup.line);
 	for(dLoc <- dupClasses[key])
@@ -254,22 +298,34 @@ public int filterDuplicates()
 			//println(file);
 			fileDups[file] = sort(fileDups[file], bool(Duplicate a, Duplicate b){ return a.location.offset < b.location.offset; });
 			int index = 0;
-			while(index+1 < size(fileDups[file]))
+			int containedIndex = index;
+			while(index+1 < size(fileDups[file]) && containedIndex+1 < size(fileDups[file]))
 			{
+				containedDuplicate = false;
 				//println(dupli.location);
-				int endDupli = fileDups[file][index].location.offset + fileDups[file][index].location.length;
-				Duplicate nextDup = fileDups[file][index+1];
-				int endNext = nextDup.location.offset + nextDup.location.length;
+				int endDupli = fileDups[file][index].line.searchIndex + fileDups[file][index].length;
+				Duplicate nextDup = fileDups[file][containedIndex+1];
+				int endNext = nextDup.line.searchIndex + nextDup.length;
 				if(endNext <= endDupli)
 				{
 					//Contained
 					//println("Contained! 	<nextDup.line.searchIndex>-<nextDup.line.searchIndex + nextDup.length> 		<nextDup.location>");
 					//println("In 		<fileDups[file][index].line.searchIndex>-<fileDups[file][index].line.searchIndex + fileDups[file][index].length>			<fileDups[file][index].location>");
-					removeDuplicate(nextDup);
+					
+					if(removeDuplicate(nextDup)) 
+					{
+						containedDuplicate = true; 
+						containedIndex += 1; 
+					}
 					count += 1;
 				}
-				index += 1;
+				if(!containedDuplicate) 
+				{
+					if(index < containedIndex) index = containedIndex;
+					else index += 1;
+				}
 			} 
+			
 	}	
 	println("Found <count> duplicate duplicates");
 	return count;
@@ -322,7 +378,7 @@ public str getNextLine(Duplicate dup)
 	}
 }
 
-public void removeDuplicate(Duplicate dup)
+public bool removeDuplicate(Duplicate dup)
 {
 	str key = getSixLines(dup.line);
 	list[Duplicate] dupClass = dupClasses[key];
@@ -332,11 +388,11 @@ public void removeDuplicate(Duplicate dup)
 		if(dup.location == dupClass[index].location)
 		{
 			dupClasses[key] = delete(dupClasses[key], index);
-			return;
+			return true;
 		}
 		index += 1;
 	}
-	return;	
+	return false;	
 }
 
 public void setDuplicateLocations()
