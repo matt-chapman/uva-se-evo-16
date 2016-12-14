@@ -4,6 +4,7 @@ import IO;
 import vis::Figure;
 import vis::Render;
 import util::Editors;
+import util::Math;
 import List;
 import Map;
 import vis::KeySym;
@@ -18,6 +19,8 @@ public Duplicate selectedClone;
 public Figure topLeft = box();
 public Figure topRight = box();
 public Figure bottomHalf = box();
+
+list[str] approvedColors = colorNames() - ["black","blue","darkblue","mediumblue","midnightblue","navy"];
 
 // Tool settings
 str topBarColor = "mediumaquamarine";
@@ -42,8 +45,9 @@ public void renderClones(map[str, list[Duplicate]] clones, bool filtered)
 		// Project selected
 		if(filtered)
 		{
+			//println();
 			// Cloneclass view			
-			topLeft = box(text("GetCloneClassInfo()"), fillColor(topBarColor));
+			topLeft = box(getCloneClassMetrics(getSixLines(clones[getOneFrom(clones)][0].line)), fillColor(topBarColor));
 			topRight = box(button("Back to overview", void(){renderClones(generateFileDups(), false);},hsize(150), hgap(25), resizable(false, false)), fillColor(topBarColor), width(topRightWidth), resizable(false,true));//box(resizable(false, true), width(250), fillColor("lightgreen"));
 			bottomHalf = box(getCloneFigure(clones, true));
 		}
@@ -70,21 +74,28 @@ public void renderClones(map[str, list[Duplicate]] clones, bool filtered)
 
 
 public Figure getCloneFigure(map[str, list[Duplicate]] clones, bool filtered)
-{
-		//for each file (& clones) make the file visualisation
+{	
+	//for each file (& clones) make the file visualisation
 	figureList = for (item <- clones) append makeFileVis(item, clones[item], size(allFiles[item]), filtered);
-	
+	sortedList = sort(figureList, bool(tuple[int len, Figure fig] a, tuple[int len, Figure fig] b){return a.len > b.len;});
+	finalList = for (tuple[int len, Figure fig] fig <- sortedList) append fig.fig;
 	widthVal = size(figureList) * 100;
 	
 	//create the visualisation by hcatting file figures
-	return scrollable(hcat(figureList, top(), resizable(false, false), fillColor("aquamarine"), hgap(15)));
+	return scrollable(hcat(finalList, top(), resizable(false, false), fillColor("aquamarine"), hgap(15)));
 	
 }
 
 public Figure getMetrics()
 {
+	num percentage = 0;
+	if(projectMetrics.lineCount > 0)
+	{
+		percentage = projectMetrics.duplicateLines-projectMetrics.subsumedLines / projectMetrics.lineCount * 100.00;
+	}		
+	
 	str metrics = "Results for <projectToProcess.authority>
-			'The project has <projectMetrics.lineCount> lines for codes containting <projectMetrics.numberOfClones> clones this is <0>% of the total project.
+			'The project has <projectMetrics.lineCount> lines for codes containting <projectMetrics.numberOfClones> clones this is <round(percentage,0.01)>% of the total project.
 			'The biggest clone is <projectMetrics.biggestClone.length> LOC long.
 			'There are <size(dupClasses)> clone classes. The biggest class contains <size(dupClasses[projectMetrics.biggestCloneClass])> clones.";
 	metricFig = text(metrics);
@@ -95,14 +106,22 @@ public Figure getMetrics()
 
 public Figure getCloneClassMetrics(str classKey)
 {
+
 	Metrics classMetrics = getClassMetrics(classKey);
 	num totalClassLines = classMetrics.numberOfClones*classMetrics.lineCount;
-	num percentage = projectMetrics.lineCount;
-	;
+	num percentage = 0;
+	if(totalClassLines > 0)
+	{
+		percentage = totalClassLines / projectMetrics.duplicateLines * 100.00;
+	}	
+	str metrics = "This clone class contains <classMetrics.numberOfClones> clones.
+		'These clones are <classMetrics.lineCount> LOC which makes this class contain a total of <classMetrics.numberOfClones*classMetrics.lineCount> LOC.
+		'This is <round(percentage, 0.01)>% of the total duplicate lines in this project";
+	return text(metrics, align(0,0));
 }
 
 
-public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool filtered)
+public tuple[int len, Figure fig] makeFileVis(str file, list[Duplicate] clones, int fileSize, bool filtered)
 {
 	loc location = toLocation(file);
 	
@@ -116,11 +135,14 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool f
 	cloneLocations = for (clone <- clones) append <clone.line.searchIndex, (clone.line.searchIndex + clone.length), clone>;
 		
 	list[Figure] cloneBoxes = [];
-
+	int len = 0;
 	for (tuple[num first, num second, Duplicate clone] bounds <- cloneLocations)
 	{
-		Duplicate cln = bounds.clone;				//store temp clone for click listener
-		cloneBoxes += box(							//make the box, add to list
+		Duplicate cln = bounds.clone;
+		str lbl = "";
+		if(cln.subsumed) lbl = "Subsumed";				//store temp clone for click listener
+		cloneBoxes += box(
+				text(lbl, fontSize(10)),							//make the box, add to list
 				resizable(true, false),				//resizable only horizontal
 				size(100, (bounds.clone.length)),	//set size according to clone size
 				fillColor(color(getCloneClassColor(cln))),			//make it angry red
@@ -135,6 +157,7 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool f
 					return true;
 				}
 				));
+		len = cln.length;
 	}
 	
 	//overlay this on the container box
@@ -144,7 +167,7 @@ public Figure makeFileVis(str file, list[Duplicate] clones, int fileSize, bool f
 	finalFigure = vcat([text(location.file, top(), onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers){edit(location);return true;}))] + cloneBoxesOverlaid + [text("<fileSize>", bottom())], resizable(false, false), top(), vgap(5), fillColor("blue"));
 
 	//return the composited figure
-	return finalFigure;
+	return <len,finalFigure>;
 }
 
 public Figure getMainMenu()
@@ -168,7 +191,7 @@ public str getCloneClassColor(Duplicate cln)
 	str key = getSixLines(cln.line);
 	if(key notin classColors)
 	{
-		classColors[key] = getOneFrom(colorNames());
+		classColors[key] = getOneFrom(approvedColors);
 	}
 	return classColors[key];
 }

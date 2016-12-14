@@ -19,17 +19,21 @@ import Set;
 import String;
 import IO;
 import Map;
+import DateTime;
+import util::Math;
 import util::Benchmark;
 
 data FileLine = FileLine(str content, loc location, int searchIndex);
-data Duplicate = Duplicate(FileLine line, loc location, int length);
+data Duplicate = Duplicate(FileLine line, loc location, int length, bool subsumed);
 
-data Metrics = Metrics(Duplicate biggestClone, int lineCount, int numberOfClones, str biggestCloneClass);
+data Metrics = Metrics(Duplicate biggestClone, num lineCount, num numberOfClones, str biggestCloneClass, num duplicateLines, num subsumedClones, num subsumedLines);
 
 public map[str, list[FileLine]] allFiles = ();
 public map[str, list[Duplicate]] dupClasses = ();
+public map[str, list[Duplicate]] dupClassesPreFilter = ();
 public map[str, list[Duplicate]] fileDups = ();
-public Metrics projectMetrics = Metrics(Duplicate(FileLine("", toLocation(""), 0),toLocation(""),0), 0,0, "");
+
+public Metrics projectMetrics = Metrics(Duplicate(FileLine("", toLocation(""), 0),toLocation(""),0,false), 0,0, "",0,0,0);
 
 
 
@@ -37,8 +41,10 @@ public loc project = |project://HelloWorld2/src/|;
 public loc project1 = |project://hsqldb-2.3.1/hsqldb/|;
 public loc project2 = |project://smallsql0.21_src/src/|;
 
+public loc resultFile = |project://Series2-MC/bin/|;
+
 public str selectedProject;
-public loc projectToProcess = project2;
+public loc projectToProcess = project1;
 public loc processedProject = toLocation("");
 
 set[loc] getProjectFiles(loc project) { 
@@ -52,26 +58,32 @@ public void analyze(loc proj)
 	dupClasses = ();
 	fileDups = ();
 	processedProject = proj;
-	
+	//projectToProcess = proj;
 	startTime = getMilliTime();
 	println("Start filtering files...");
 	filterProjectFiles(proj);
 	getDuplicates();
 	projectMetrics = calculateMetrics();
-	
+	writeResultsToFile();
 	println("Analyzing took <getMilliTime() - startTime>ms");
 }
 
 public Metrics calculateMetrics()
 {
-	Metrics metr = Metrics(Duplicate(FileLine("", toLocation(""), 0),toLocation(""),0), 0,0, "");
+	Metrics metr = Metrics(Duplicate(FileLine("", toLocation(""), 0),toLocation(""),0,false), 0,0, "", 0,0,0);
 	for(dClass <- dupClasses)
 	{
 		if(metr.biggestCloneClass == "" || size(dupClasses[dClass]) > size(dupClasses[metr.biggestCloneClass])) metr.biggestCloneClass = dClass;
 		for(dup <- dupClasses[dClass])
-		{				
-			metr.numberOfClones +=1;
+		{	
+			metr.duplicateLines += dup.length;
+			metr.numberOfClones += 1;
 			if(dup.length > metr.biggestClone.length) metr.biggestClone = dup;
+			if(dup.subsumed)
+			{
+				metr.subsumedClones += 1;
+				metr.subsumedLines += dup.length;
+			}
 		}
 	}
 	for(file <-allFiles) metr.lineCount += size(allFiles[file]);
@@ -80,10 +92,11 @@ public Metrics calculateMetrics()
 
 public Metrics getClassMetrics(str classKey)
 {
-	Metrics classMetrics = Metrics(Duplicate(FileLine("", toLocation(""), 0),toLocation(""),0), 0,0, "");
-	List[Duplicate] classDuplicates = dupClasses[key];
-	for (dup in classDuplicates)
+	Metrics classMetrics = Metrics(Duplicate(FileLine("", toLocation(""), 0),toLocation(""),0,false), 0,0, "",0,0,0);
+	list[Duplicate] classDuplicates = dupClasses[classKey];
+	for (dup <- classDuplicates)
 	{
+		classMetrics.duplicateLines += dup.length;	
 		classMetrics.lineCount = dup.length;
 		classMetrics.numberOfClones += 1;
 	}
@@ -117,14 +130,14 @@ public num getDuplicates()
 			{ 
 				if(duplicateString notin dupClasses)
 				{
-				 	dupClasses += (duplicateString : [Duplicate(fileLines[searchIndex],fileLines[searchIndex].location , 6)]);
-				 	dupClasses[duplicateString] += Duplicate(nonDuplicates[duplicateString],nonDuplicates[duplicateString].location, 6);
+				 	dupClasses += (duplicateString : [Duplicate(fileLines[searchIndex],fileLines[searchIndex].location , 6, false)]);
+				 	dupClasses[duplicateString] += Duplicate(nonDuplicates[duplicateString],nonDuplicates[duplicateString].location, 6, false);
 				}
 				else
 				{
-					if(Duplicate(fileLines[searchIndex],fileLines[searchIndex].location, 6) notin dupClasses[duplicateString])
+					if(Duplicate(fileLines[searchIndex],fileLines[searchIndex].location, 6, false) notin dupClasses[duplicateString])
 					{
-						dupClasses[duplicateString] += Duplicate(fileLines[searchIndex],fileLines[searchIndex].location, 6);
+						dupClasses[duplicateString] += Duplicate(fileLines[searchIndex],fileLines[searchIndex].location, 6, false);
 					}
 					
 				}		
@@ -146,7 +159,13 @@ public num getDuplicates()
 	println("Growing ended");
 	setDuplicateLocations();
 	
-	while(filterDuplicates() != 0) {;}
+	int lastFilter = 0;
+	while(true) 
+	{
+		int thisFilter = filterDuplicates();
+		if(lastFilter == thisFilter) break;
+		lastFilter = thisFilter;
+	}
 	
 	
 	num procent = ((duplicateCount*6)/(totalSize))*100;
@@ -222,12 +241,11 @@ public void growDuplicates()
 			
 			// go on to the next clone class if there are no next lines
 			if(size(nextLines) == 0) continue;
-			
 			int index = 0;
 			while(index <= size(nextLines)-1)
 			{
 				list[str] temp = nextLines;
-				str tempComp = temp[index];
+				str tempComp = getNextLine(dupClasses[dClass][index]);
 				temp = delete(temp, index);
 				if(tempComp != "" && tempComp in temp)
 				{
@@ -305,25 +323,37 @@ public int filterDuplicates()
 				int endNext = nextDup.line.searchIndex + nextDup.length;
 				
 				// If the next duplicate end before the current duplicate ends, the next duplicate is contained in the current duplicate
-				if(endNext <= endDupli)
+				if(endNext <= endDupli && nextDup.line.searchIndex > fileDups[file][index].line.searchIndex)
 				{
+					setSubsumed(nextDup);
+					containedDuplicate = true; 
+					containedIndex += 1; 
 					// Remove duplicate
-					if(removeDuplicate(nextDup)) 
-					{
-						containedDuplicate = true; 
-						containedIndex += 1; 
-					}
 					count += 1;
 				}
 				// If there was no duplicate contained: 
 				if(!containedDuplicate) 
 				{
 					if(index < containedIndex) index = containedIndex;
-					else index += 1;
+					else {index += 1; containedIndex += 1;}
 				}
 			} 
 			
-	}	
+	}
+	for(dClass <- dupClasses)
+	{		
+		bool classIsSubsumed = true;
+		for(dup <- dupClasses[dClass]) if(!dup.subsumed) classIsSubsumed = false;
+		//println("Class subsumed <classIsSubsumed>");
+		if(classIsSubsumed)
+		{
+			//println("Delete Class");
+			for(dup <- dupClasses[dClass]) 
+			{
+				removeDuplicate(dup);
+			}
+		}
+	}
 	println("Found <count> duplicate duplicates");
 	return count;
 }
@@ -355,6 +385,7 @@ public bool removeDuplicate(Duplicate dup)
 		if(dup.location == dupClass[index].location)
 		{
 			dupClasses[key] = delete(dupClasses[key], index);
+			if(size(dupClasses[key]) == 0) dupClasses = delete(dupClasses, key);
 			return true;
 		}
 		index += 1;
@@ -370,6 +401,7 @@ public void setDuplicateLocations()
 		int index = 0;
 		for(dup <- dupClasses[dClass])
 		{
+			//println("<dup.location> <dup.length>");
 			fileLines = allFiles[dup.line.location.uri];
 			lastLine = fileLines[dup.line.searchIndex+(dup.length-1)];
 			dupClasses[dClass][index].location.length = (lastLine.location.offset +size(lastLine.content)) - dup.line.location.offset;
@@ -428,5 +460,53 @@ bool isWhiteSpace(str s){
 bool isComment(str s){
 	if(/((\s|\/*)(\/\*|^(\s+\*))|^(\s*\/*\/))/ := s) return true;
 	return false;
+}
+
+public void setSubsumed(Duplicate dup)
+{
+	str key = getSixLines(dup.line);
+	list[Duplicate] dupClass = dupClasses[key];
+	int index = 0;
+	while(index < size(dupClass))
+	{
+		if(dup.location == dupClass[index].location)
+		{
+			dupClasses[key][index].subsumed = true;
+			return;
+		}
+		index += 1;
+	}
+	return;	
+}
+
+public void writeResultsToFile()
+{
+	fileLoc = resultFile + "Results-<printDate(now(), "MMdd-HHmmss")>";
+	
+	num percentage = 0;
+	if(projectMetrics.lineCount > 0)
+	{
+		percentage = projectMetrics.duplicateLines / projectMetrics.lineCount * 100.00;
+	}		
+	
+	str fileStr = "Results for <processedProject.authority>
+			'The project has <projectMetrics.lineCount> lines for codes containting <projectMetrics.numberOfClones> clones this is <round(percentage,0.01)>% of the total project.
+			'The biggest clone is <projectMetrics.biggestClone.length> LOC long.
+			'There are <size(dupClasses)> clone classes. The biggest class contains <size(dupClasses[projectMetrics.biggestCloneClass])> clones.\n\n";
+	
+	int i = 1;
+	for(dClass <- dupClasses)
+	{
+		fileStr += "Clone Class <i>\n";
+		for(dup <- dupClasses[dClass])
+		{
+			fileStr += "	<dup.location>\n";
+		}
+		fileStr += "\n";
+		i += 1;
+	}
+	
+	writeFile(fileLoc, fileStr);
+	return;
 }
 
