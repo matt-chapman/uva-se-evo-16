@@ -39,6 +39,7 @@ public loc project2 = |project://smallsql0.21_src/src/|;
 
 public str selectedProject;
 public loc projectToProcess = project2;
+public loc processedProject = toLocation("");
 
 set[loc] getProjectFiles(loc project) { 
    bool containsFile(loc d) = isFile(d) ? (d.extension == "java") : false;
@@ -47,10 +48,17 @@ set[loc] getProjectFiles(loc project) {
 
 public void analyze(loc proj)
 {
+	allFiles = ();
+	dupClasses = ();
+	fileDups = ();
+	processedProject = proj;
+	
 	startTime = getMilliTime();
+	println("Start filtering files...");
 	filterProjectFiles(proj);
 	getDuplicates();
 	projectMetrics = calculateMetrics();
+	
 	println("Analyzing took <getMilliTime() - startTime>ms");
 }
 
@@ -68,6 +76,19 @@ public Metrics calculateMetrics()
 	}
 	for(file <-allFiles) metr.lineCount += size(allFiles[file]);
 	return metr;
+}
+
+public Metrics getClassMetrics(str classKey)
+{
+	Metrics classMetrics = Metrics(Duplicate(FileLine("", toLocation(""), 0),toLocation(""),0), 0,0, "");
+	List[Duplicate] classDuplicates = dupClasses[key];
+	for (dup in classDuplicates)
+	{
+		classMetrics.lineCount = dup.length;
+		classMetrics.numberOfClones += 1;
+	}
+	
+	return classMetrics;
 }
 
 public num getDuplicates()
@@ -106,14 +127,7 @@ public num getDuplicates()
 						dupClasses[duplicateString] += Duplicate(fileLines[searchIndex],fileLines[searchIndex].location, 6);
 					}
 					
-				}
-				//duplicates += Duplicate(fileLines[searchIndex], 6);
-
-				//println("False Duplicate <duplicateCount> found!");
-				//println(duplicateString);	
-				//println(fileLines[searchIndex].location);
-				//println(nonDuplicates[duplicateString]);
-		
+				}		
 				duplicateCount += 1;
 				//Skip next 5 lines
 				searchIndex += 5;
@@ -123,84 +137,74 @@ public num getDuplicates()
 				searchIndex += 1;
 			}
 			
-			//println("Duplicatecount: <duplicateCount>");
-			
 		}
 	}
-	
-	//for(dup <- duplicates)
-	//{
-	//	list[Duplicate] fileLns = allLines[dup.location.uri];
-	//	
-	//	//println(fileLns[dup.searchIndex].content);
-	//	//println(dup.content);
-	//	
-	//	//println(nonDuplicates[getSixLines(fileLns, dup.searchIndex)]);
-	//	original = nonDuplicates[getSixLines(fileLns, dup.searchIndex)];
-	//	println(allLines[original.location.uri])[original.searchIndex].content;
-	//	println(dup.location);
-	//}
-	//print(duplicates)
 	println("Grow First duplicates....");
 	growFirstDups();
 	println("Start Growing....");
 	growDuplicates();
 	println("Growing ended");
 	setDuplicateLocations();
+	
 	while(filterDuplicates() != 0) {;}
 	
-	//for(dClass <- dupClasses)
-	//{
-	//	dSize = size(dupClasses[dClass]);
-	//	println("Classcount <dSize>");
-	//	//if(dSize >= 3)
-	//	//{
-	//		for(dLoc <- dupClasses[dClass]) println("<dLoc.location> lenght:<dLoc.length>");
-	//	//}
-	//}
+	
 	num procent = ((duplicateCount*6)/(totalSize))*100;
 	println("Total line count: <totalSize>, <duplicateCount>(<procent>%) duplicate lines, in <size(dupClasses)> Clone Classes");
 	return duplicateCount;
 }
 
+//This grows the first duplicate for each file and filters out all duplicates contained in that duplicate.
+//This gives a performance boost for duplicate files and prevents growing duplicates which are discarded in the next step.
 public void growFirstDups()
 {
 	map[str, list[Duplicate]] fDups = generateFileDups();
 	map[str, Duplicate] firstFDups = ();
+	
+	//Get the first duplicate for each file
 	for(file <- fDups)
 	{
 		temp = sort(fDups[file], bool(Duplicate a, Duplicate b){return a.line.location.offset < b.line.location.offset;});
 		firstFDups[file] = temp[0];
 	}
 	int length = 6;
+	
+	//firstFDups only contain the first clone class of each file.
 	for(file <- firstFDups)
 	{
 		str classStr = getSixLines(firstFDups[file].line);
+		
+		//This loop will compare the next line of the duplicates in the same clone class. If they are equal the duplicates can grow by one.
+		//This is repeated until all duplicates stopped growing.
 		while(true){
 			growing = false;
 			list[str] nextLines = [];
-			for(dup <- dupClasses[classStr])
-			{
-				if(dup.length + 1 >= length){				
-					nextLines += getNextLine(dup);
-				}
-			}
+			//Get a list of the next lines for each duplicate within a clone class.
+			for(dup <- dupClasses[classStr]) if(dup.length + 1 >= length) nextLines += getNextLine(dup);
+			
 			int index = 0;
+			//Compare the next lines, if the next line of two duplicates are equal, both duplicates can grow by one.
 			while(index <= size(nextLines)-1)
 			{
-				list[str] temp = nextLines;
-				str tempComp = temp[index];
-				temp = delete(temp, index);
-				if(tempComp != "" && tempComp in temp)
+				// get a temporary list of all nextlines
+				list[str] tempNextLines = nextLines;
+				// get the nextline which will be compared to all others
+				str currentNextLine = tempNextLines[index];
+				// remove the nextline which will be compared from the list
+				tempNextLines = delete(tempNextLines, index);
+				// check if the nextline is still present in the list, this would mean the nextline of atleast two duplicates are equal and so the duplicate can grow.
+				if(currentNextLine != "" && currentNextLine in tempNextLines)
 				{
 					dupClasses[classStr][index].length += 1;
 					growing = true;
 				}
 				index += 1;
 			}
+			// If all duplicates in the clone class stopped growing break out the while loop
 			if(!growing) break;
 		}
 	}
+	// Filter out duplicates contained within other duplicates
 	filterDuplicates();
 	return;	
 }
@@ -211,21 +215,14 @@ public void growDuplicates()
 	int length = 6;
 	int grow = 0;
 	while(true){
-		list[str] hitFiles = [];
 		for(dClass <- dupClasses)
 		{
 			list[str] nextLines = [];
-			for(dup <- dupClasses[dClass])
-			{
-				
-				if(dup.length + 1 >= length){
-					
-					nextLines += getNextLine(dup);
-				}
-			}
+			for(dup <- dupClasses[dClass]) if(dup.length + 1 >= length) nextLines += getNextLine(dup);
 			
+			// go on to the next clone class if there are no next lines
 			if(size(nextLines) == 0) continue;
-			//println("<size(nextLines)> <length>");
+			
 			int index = 0;
 			while(index <= size(nextLines)-1)
 			{
@@ -237,12 +234,11 @@ public void growDuplicates()
 					dupClasses[dClass][index].length += 1;
 					growing = true;
 					grow += 1;
-					if(dupClasses[dClass][index].line.location.uri notin hitFiles) hitFiles += dupClasses[dClass][index].line.location.uri;
 				}
 				index += 1;
 			}
 		}
-		println("Still growing! Growing <grow> clones with length <length> in <size(hitFiles)> files");
+		println("Still growing! Growing <grow> clones with length <length>");
 		if(!growing) break;
 		length += 1;
 		grow = 0;
@@ -252,7 +248,7 @@ public void growDuplicates()
 
 public map[str, list[Duplicate]] generateFileDups()
 {
-	if(dupClasses == ()) analyze(projectToProcess);
+	if(processedProject != projectToProcess) analyze(projectToProcess);
 	map[str, list[Duplicate]] fDups = ();
 	for(dClass <- dupClasses)
 	{
@@ -295,23 +291,23 @@ public int filterDuplicates()
 	int count = 0;
 	for(file <- fileDups)
 	{
-			//println(file);
 			fileDups[file] = sort(fileDups[file], bool(Duplicate a, Duplicate b){ return a.location.offset < b.location.offset; });
 			int index = 0;
 			int containedIndex = index;
 			while(index+1 < size(fileDups[file]) && containedIndex+1 < size(fileDups[file]))
 			{
 				containedDuplicate = false;
-				//println(dupli.location);
+				// Calculate the end of the duplicate
 				int endDupli = fileDups[file][index].line.searchIndex + fileDups[file][index].length;
+				
+				// Calculate the end of the next duplicate
 				Duplicate nextDup = fileDups[file][containedIndex+1];
 				int endNext = nextDup.line.searchIndex + nextDup.length;
+				
+				// If the next duplicate end before the current duplicate ends, the next duplicate is contained in the current duplicate
 				if(endNext <= endDupli)
 				{
-					//Contained
-					//println("Contained! 	<nextDup.line.searchIndex>-<nextDup.line.searchIndex + nextDup.length> 		<nextDup.location>");
-					//println("In 		<fileDups[file][index].line.searchIndex>-<fileDups[file][index].line.searchIndex + fileDups[file][index].length>			<fileDups[file][index].location>");
-					
+					// Remove duplicate
 					if(removeDuplicate(nextDup)) 
 					{
 						containedDuplicate = true; 
@@ -319,6 +315,7 @@ public int filterDuplicates()
 					}
 					count += 1;
 				}
+				// If there was no duplicate contained: 
 				if(!containedDuplicate) 
 				{
 					if(index < containedIndex) index = containedIndex;
@@ -329,37 +326,6 @@ public int filterDuplicates()
 	}	
 	println("Found <count> duplicate duplicates");
 	return count;
-}
-
-public tuple[bool, bool] growPossible(Duplicate dup1, Duplicate dup2)
-{
-	if(dup1.line == dup2.line) return <false,false>;
-	
-	dup1Lines = allFiles[dup1.line.location.uri];
-	dup2Lines = allFiles[dup2.line.location.uri];
-	
-	//Check if the end of the file is reached
-	if(hasNextLine(dup1) && hasNextLine(dup2))
-	{		
-		if(dup1.length == dup2.length)
-		{		
-			if(dup1Lines[dup1.line.searchIndex+dup1.length] == dup2Lines[dup2.line.searchIndex+dup2.length]) 
-				return <true,true>;
-		}
-		else if (dup1.length > dup2.length)
-		{
-			//dup1 is larger - so check if dup2 can grow
-			if(dup1Lines[dup1.line.searchIndex+dup1.length-1] == dup2Lines[dup2.line.searchIndex+dup2.length])
-				return <false,true>;
-		}
-		else if (dup1.length < dup2.length-1)
-		{
-			//dup2 is larger - so check if dup1 can grow
-			if(dup1Lines[dup1.line.searchIndex+dup1.length] == dup2Lines[dup2.line.searchIndex+dup2.length-1])
-				return <true,false>;
-		}
-	}
-	return <false,false>;
 }
 
 public bool hasNextLine(Duplicate dup)
@@ -378,6 +344,7 @@ public str getNextLine(Duplicate dup)
 	}
 }
 
+// Removes a duplicate from the clone classes
 public bool removeDuplicate(Duplicate dup)
 {
 	str key = getSixLines(dup.line);
@@ -395,6 +362,7 @@ public bool removeDuplicate(Duplicate dup)
 	return false;	
 }
 
+// Set the length of each clone
 public void setDuplicateLocations()
 {
 	for(dClass <- dupClasses)
@@ -403,7 +371,6 @@ public void setDuplicateLocations()
 		for(dup <- dupClasses[dClass])
 		{
 			fileLines = allFiles[dup.line.location.uri];
-			//if(size(fileLines) <= dup.line.searchIndex+(dup.length-1)) println("<dupClasses[getSixLines(dup.line)]> <size(fileLines)> <dup.line.searchIndex+(dup.length-1)>");
 			lastLine = fileLines[dup.line.searchIndex+(dup.length-1)];
 			dupClasses[dClass][index].location.length = (lastLine.location.offset +size(lastLine.content)) - dup.line.location.offset;
 			index = index + 1;
@@ -412,7 +379,7 @@ public void setDuplicateLocations()
 	return;
 }
 
-
+// Get sixlines, this is also the key of each clone class
 public str getSixLines(FileLine line)
 {
 	list[FileLine] lines = allFiles[line.location.uri];
@@ -423,6 +390,7 @@ public str getSixLines(FileLine line)
 	}
 	else return "";
 }
+
 
 public void filterProjectFiles(loc projectName)
 {

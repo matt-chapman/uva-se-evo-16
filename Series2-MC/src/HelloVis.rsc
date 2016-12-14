@@ -15,7 +15,9 @@ public map[str,str] classColors = ();
 public int viewIndex = 0;
 public Duplicate selectedClone;
 
-
+public Figure topLeft = box();
+public Figure topRight = box();
+public Figure bottomHalf = box();
 
 // Tool settings
 str topBarColor = "mediumaquamarine";
@@ -35,9 +37,6 @@ public void runTest()
 //render the clone view
 public void renderClones(map[str, list[Duplicate]] clones, bool filtered)
 {
-	Figure topLeft = box();
-	Figure topRight = box();
-	Figure bottom = box();
 	if(clones != ("":[]))
 	{
 		// Project selected
@@ -46,15 +45,14 @@ public void renderClones(map[str, list[Duplicate]] clones, bool filtered)
 			// Cloneclass view			
 			topLeft = box(text("GetCloneClassInfo()"), fillColor(topBarColor));
 			topRight = box(button("Back to overview", void(){renderClones(generateFileDups(), false);},hsize(150), hgap(25), resizable(false, false)), fillColor(topBarColor), width(topRightWidth), resizable(false,true));//box(resizable(false, true), width(250), fillColor("lightgreen"));
-			bottom = box(getCloneFigure(clones, true));
+			bottomHalf = box(getCloneFigure(clones, true));
 		}
 		else
 		{
 			topLeft = box(getMetrics(), fillColor(topBarColor));
 			topRight = box(getMainMenu(), width(topRightWidth), fillColor(topBarColor), resizable(false,true));//box(resizable(false, true), width(250), fillColor("lightgreen"));
-			if(overView == box()) {overView = box(getCloneFigure(clones, false)); }
 			
-			bottom = overView;
+			bottomHalf = box(getCloneFigure(clones, false));
 			
 		}
 	}
@@ -63,12 +61,13 @@ public void renderClones(map[str, list[Duplicate]] clones, bool filtered)
 		// Mainmenu, no project selected
 		topLeft = box(text("Clone Detection Tool", fontSize(40)), fillColor(topBarColor));
 		topRight = box(getMainMenu(), width(topRightWidth), fillColor(topBarColor), resizable(false,true));//box(resizable(false, true), width(250), fillColor("lightgreen"));
-		bottom = box(text("Please select a project to analyze"));
+		bottomHalf = box(text("Please select a project to analyze"));
 	}
 	Figure top = box(hcat([(topLeft), topRight]), height(topBarHeight), resizable(true, false));	
-	render("Clone Detection Tool", (vcat([top, bottom])));
+	render("Clone Detection Tool", (vcat([top, bottomHalf])));
 	
 }
+
 
 public Figure getCloneFigure(map[str, list[Duplicate]] clones, bool filtered)
 {
@@ -92,6 +91,14 @@ public Figure getMetrics()
 	classClick = text("This is the biggest clone class(Click!)",fontColor("Blue"), left(),onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers){renderClones(generateFileDups(dupClasses[projectMetrics.biggestCloneClass][0]), true);return true;}));
 	cloneClick = text("This is the biggest clone(Click!)",fontColor("Blue"), left(),onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers){renderClones(generateFileDups(projectMetrics.biggestClone), true);return true;}));
 	return  vcat([metricFig, classClick, cloneClick], align(0,0));
+}
+
+public Figure getCloneClassMetrics(str classKey)
+{
+	Metrics classMetrics = getClassMetrics(classKey);
+	num totalClassLines = classMetrics.numberOfClones*classMetrics.lineCount;
+	num percentage = projectMetrics.lineCount;
+	;
 }
 
 
