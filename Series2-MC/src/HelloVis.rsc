@@ -20,7 +20,7 @@ public Figure topLeft = box();
 public Figure topRight = box();
 public Figure bottomHalf = box();
 
-list[str] approvedColors = colorNames() - ["black","blue","darkblue","mediumblue","midnightblue","navy"];
+list[str] approvedColors = colorNames() - ["black","blue","darkblue","mediumblue","midnightblue","navy","azure"]; // Exclude the listed colors
 
 // Tool settings
 str topBarColor = "mediumaquamarine";
@@ -91,12 +91,11 @@ public Figure getMetrics()
 	num percentage = 0;
 	if(projectMetrics.lineCount > 0)
 	{
-		percentage = projectMetrics.duplicateLines-projectMetrics.subsumedLines / projectMetrics.lineCount * 100.00;
+		percentage =  (projectMetrics.duplicateLines-projectMetrics.subsumedLines)/projectMetrics.lineCount * 100.00;
 	}		
-	
 	str metrics = "Results for <projectToProcess.authority>
 			'The project has <projectMetrics.lineCount> lines for codes containting <projectMetrics.numberOfClones> clones this is <round(percentage,0.01)>% of the total project.
-			'The biggest clone is <projectMetrics.biggestClone.length> LOC long.
+			'<projectMetrics.subsumedClones>(<projectMetrics.subsumedLines> LOC) of these clones are subsumed inside other clones. The biggest clone is <projectMetrics.biggestClone.length> LOC long.
 			'There are <size(dupClasses)> clone classes. The biggest class contains <size(dupClasses[projectMetrics.biggestCloneClass])> clones.";
 	metricFig = text(metrics);
 	classClick = text("This is the biggest clone class(Click!)",fontColor("Blue"), left(),onMouseDown(bool (int butnr, map[KeyModifier,bool] modifiers){renderClones(generateFileDups(dupClasses[projectMetrics.biggestCloneClass][0]), true);return true;}));
@@ -112,9 +111,9 @@ public Figure getCloneClassMetrics(str classKey)
 	num percentage = 0;
 	if(totalClassLines > 0)
 	{
-		percentage = totalClassLines / projectMetrics.duplicateLines * 100.00;
+		percentage = (totalClassLines-classMetrics.subsumedLines) / projectMetrics.duplicateLines * 100.00;
 	}	
-	str metrics = "This clone class contains <classMetrics.numberOfClones> clones.
+	str metrics = "This clone class contains <classMetrics.numberOfClones> clones. There are <classMetrics.subsumedClones>(<classMetrics.subsumedLines> LOC) subsumed clones in this class.
 		'These clones are <classMetrics.lineCount> LOC which makes this class contain a total of <classMetrics.numberOfClones*classMetrics.lineCount> LOC.
 		'This is <round(percentage, 0.01)>% of the total duplicate lines in this project";
 	return text(metrics, align(0,0));
@@ -144,7 +143,7 @@ public tuple[int len, Figure fig] makeFileVis(str file, list[Duplicate] clones, 
 		cloneBoxes += box(
 				text(lbl, fontSize(10)),							//make the box, add to list
 				resizable(true, false),				//resizable only horizontal
-				size(100, (bounds.clone.length)),	//set size according to clone size
+				size(75, (bounds.clone.length)),	//set size according to clone size
 				fillColor(color(getCloneClassColor(cln))),			//make it angry red
 				valign(bounds.first / fileSize),	//align according to clone pos
 				hint("<bounds.clone.location>"),	//add hint

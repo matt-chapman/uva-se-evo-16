@@ -99,6 +99,11 @@ public Metrics getClassMetrics(str classKey)
 		classMetrics.duplicateLines += dup.length;	
 		classMetrics.lineCount = dup.length;
 		classMetrics.numberOfClones += 1;
+		if(dup.subsumed)
+		{
+			classMetrics.subsumedClones += 1;
+			classMetrics.subsumedLines += dup.length;
+		}
 	}
 	
 	return classMetrics;
@@ -325,11 +330,14 @@ public int filterDuplicates()
 				// If the next duplicate end before the current duplicate ends, the next duplicate is contained in the current duplicate
 				if(endNext <= endDupli && nextDup.line.searchIndex > fileDups[file][index].line.searchIndex)
 				{
-					setSubsumed(nextDup);
+					setSubsumed(nextDup, true);
 					containedDuplicate = true; 
 					containedIndex += 1; 
-					// Remove duplicate
 					count += 1;
+				}
+				else
+				{
+					setSubsumed(nextDup, false);
 				}
 				// If there was no duplicate contained: 
 				if(!containedDuplicate) 
@@ -462,7 +470,7 @@ bool isComment(str s){
 	return false;
 }
 
-public void setSubsumed(Duplicate dup)
+public void setSubsumed(Duplicate dup, bool val)
 {
 	str key = getSixLines(dup.line);
 	list[Duplicate] dupClass = dupClasses[key];
@@ -471,7 +479,7 @@ public void setSubsumed(Duplicate dup)
 	{
 		if(dup.location == dupClass[index].location)
 		{
-			dupClasses[key][index].subsumed = true;
+			dupClasses[key][index].subsumed = val;
 			return;
 		}
 		index += 1;
