@@ -31,9 +31,11 @@ This document serves as a basic design document accompanying the creation of the
 The goal of this document is to explain the basic workings of the tool, along with some rationale for the design decisions that were taken during development.
 
 \section{Using the tool}
-To begin using the tool, open the project in Eclipse, and begin a Rascal console session. In this console run the commands \texttt{import HelloVis; runTest();} to start the tool.
+To begin using the tool, open the project in Eclipse, and begin a Rascal console session. In this console run the commands \texttt{import CloneVisualisation; runTool();} to start the tool.
 
-In the top right corner of the screen there is a combobox for selecting one of two different projects: \texttt{hsqldb} or \texttt{smallsql}. Select one of these projects and click \textit{Analyse} to begin the analysis.
+In the top right corner of the screen there is a combobox for selecting one of two different projects: \texttt{hsqldb} or \texttt{smallsql}\footnote{In it's default state, the clone highlighting in this project will not work correctly with the tool, due to it using \texttt{CR NL} for new lines. These characters are ignored when files are read by Rascal, but not when creating \texttt{loc} objects. It is necessary to write a script to handle replacing these characters - which will be made available in the project repository.}. Select one of these projects and click \textit{Analyse} to begin the analysis.
+
+Figure \ref{fig:shot1} shows an example of the view presented when a project is analysed. The top bar (green) displays some basic clone metrics for the project in question, along with links that can be clicked to display the biggest clone and clone class.\newpage
 
 \begin{figure}[h]
 \centering
@@ -42,11 +44,16 @@ In the top right corner of the screen there is a combobox for selecting one of t
 \label{fig:shot1}
 \end{figure}
 
-Figure \ref{fig:shot1} shows an example of the view presented when a project is analysed. The top bar (green) displays some basic clone metrics for the project in question, along with links that can be clicked to display the biggest clone and clone class.
-
 The main view shows each file in the analysed project, with the file name listed above a box that is scaled according to the true size of the file. Under each box is the total file size in LOC (Lines of Code), albeit after the file has been filtered for comments and white space.
 
 Clones are rendered as overlapping, colour coded boxes. Each clone class is rendered in a unique colour, and boxes of the same colour can be assumed to be members of the same clone class. Clicking on a clone class will render only the locations in which the clone class exists. The top bar will display metrics pertaining to the clone class in question.
+
+\begin{figure}[h]
+\centering
+\fbox{\includegraphics[width=4cm]{images/visexample1}}
+\caption{An example file with 2 clone classes}
+\label{fig:shot2}
+\end{figure}
 
 The files are sorted such that the files containing the largest clones are rendered first on the left. The files containing the smallest detected clones are on the far right of the visualisation.
 
