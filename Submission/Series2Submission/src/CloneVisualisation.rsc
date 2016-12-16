@@ -31,7 +31,7 @@ int topRightWidth = 250;
 Figure overView = box();
 
 //test method
-public void runTest()
+public void startTool()
 {
 	renderClones(("":[]), false);
 }
@@ -172,7 +172,11 @@ public Figure getMainMenu()
 {
 	return vcat([
 				combo(["smallsql", "hsqldb"], void(str s){ modifySelectedProject(s); }, hsize(200), resizable(false, false)),
-				button("Analyse", void(){renderClones(generateFileDups(), false);}, hsize(100), hgap(25), resizable(false, false))
+				button("Analyse", void()
+				{
+				if(processedProject != projectToProcess) analyze(projectToProcess);
+				renderClones(generateFileDups(), false);
+				}, hsize(100), hgap(25), resizable(false, false))
 				], resizable(false, false));
 }
 

@@ -58,7 +58,6 @@ public void analyze(loc proj)
 	dupClasses = ();
 	fileDups = ();
 	processedProject = proj;
-	//projectToProcess = proj;
 	startTime = getMilliTime();
 	println("Start filtering files...");
 	filterProjectFiles(proj);

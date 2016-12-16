@@ -1,18 +1,6 @@
 module CloneDetection
 
-import lang::java::m3::Core;
-import lang::java::m3::AST;
-import lang::java::jdt::m3::Core;
-import lang::java::jdt::m3::AST;
-
-import lang::java::m3::AST;
-import lang::java::m3::Core;
-import lang::java::jdt::m3::Core;
-import lang::java::jdt::m3::AST;
-
-import analysis::m3::AST;
 import util::Resources;
-
 import util::FileSystem;
 import List;
 import Set;
@@ -39,7 +27,7 @@ public loc project = |project://HelloWorld2/src/|;
 public loc project1 = |project://hsqldb-2.3.1/hsqldb/|;
 public loc project2 = |project://smallsql0.21_src/src/|;
 
-public loc resultFile = |project://Series2-MC/bin/|;
+public loc resultFile = |project://Series2Submission/bin/|;
 
 public str selectedProject;
 public loc projectToProcess = project1;
@@ -168,10 +156,6 @@ public num getDuplicates()
 		if(lastFilter == thisFilter) break;
 		lastFilter = thisFilter;
 	}
-	
-	
-	//num procent = ((duplicateCount*6)/(totalSize))*100;
-	//println("Total line count: <totalSize>, <duplicateCount>(<procent>%) duplicate lines, in <size(dupClasses)> Clone Classes");
 	return duplicateCount;
 }
 
@@ -258,7 +242,6 @@ public void growDuplicates()
 				index += 1;
 			}
 		}
-		println("Still growing! Growing <grow> clones with length <length>");
 		if(!growing) break;
 		length += 1;
 		grow = 0;
@@ -268,7 +251,6 @@ public void growDuplicates()
 
 public map[str, list[Duplicate]] generateFileDups()
 {
-	if(processedProject != projectToProcess) analyze(projectToProcess);
 	map[str, list[Duplicate]] fDups = ();
 	for(dClass <- dupClasses)
 	{
@@ -349,17 +331,14 @@ public int filterDuplicates()
 	{		
 		bool classIsSubsumed = true;
 		for(dup <- dupClasses[dClass]) if(!dup.subsumed) classIsSubsumed = false;
-		//println("Class subsumed <classIsSubsumed>");
 		if(classIsSubsumed)
 		{
-			//println("Delete Class");
 			for(dup <- dupClasses[dClass]) 
 			{
 				removeDuplicate(dup);
 			}
 		}
 	}
-	println("Found <count> duplicate duplicates");
 	return count;
 }
 
@@ -406,7 +385,6 @@ public void setDuplicateLocations()
 		int index = 0;
 		for(dup <- dupClasses[dClass])
 		{
-			//println("<dup.location> <dup.length>");
 			fileLines = allFiles[dup.line.location.uri];
 			lastLine = fileLines[dup.line.searchIndex+(dup.length-1)];
 			dupClasses[dClass][index].location.length = (lastLine.location.offset +size(lastLine.content)) - dup.line.location.offset;
