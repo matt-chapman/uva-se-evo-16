@@ -54,6 +54,8 @@ test bool testGetDuplicates()
 	loc knownClones = |project://HelloClones/src|;
 	projectToProcess = knownClones;
 	
+	analyze(knownClones);
+	
 	testResult = getDuplicates();
 	//println(testResult);
 	
