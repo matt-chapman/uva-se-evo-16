@@ -56,22 +56,24 @@ public void analyze(loc proj)
 public Metrics calculateMetrics()
 {
 	Metrics metr = Metrics(Duplicate(FileLine("", toLocation(""), 0),toLocation(""),0,false), 0,0, "", 0,0,0);
-	for(dClass <- dupClasses)
-	{
-		if(metr.biggestCloneClass == "" || size(dupClasses[dClass]) > size(dupClasses[metr.biggestCloneClass])) metr.biggestCloneClass = dClass;
-		for(dup <- dupClasses[dClass])
-		{	
-			metr.duplicateLines += dup.length;
-			metr.numberOfClones += 1;
-			if(dup.length > metr.biggestClone.length) metr.biggestClone = dup;
-			if(dup.subsumed)
-			{
-				metr.subsumedClones += 1;
-				metr.subsumedLines += dup.length;
+	if(dupClasses != ()){
+		for(dClass <- dupClasses)
+		{
+			if(metr.biggestCloneClass == "" || size(dupClasses[dClass]) > size(dupClasses[metr.biggestCloneClass])) metr.biggestCloneClass = dClass;
+			for(dup <- dupClasses[dClass])
+			{	
+				metr.duplicateLines += dup.length;
+				metr.numberOfClones += 1;
+				if(dup.length > metr.biggestClone.length) metr.biggestClone = dup;
+				if(dup.subsumed)
+				{
+					metr.subsumedClones += 1;
+					metr.subsumedLines += dup.length;
+				}
 			}
 		}
+		for(file <-allFiles) metr.lineCount += size(allFiles[file]);
 	}
-	for(file <-allFiles) metr.lineCount += size(allFiles[file]);
 	return metr;
 }
 
@@ -467,16 +469,17 @@ public void writeResultsToFile()
 	fileLoc = resultFile + "Results-<printDate(now(), "MMdd-HHmmss")>";
 	
 	num percentage = 0;
+	str fileStr = "";
 	if(projectMetrics.lineCount > 0)
 	{
 		percentage = projectMetrics.duplicateLines / projectMetrics.lineCount * 100.00;
-	}		
+			
 	
-	str fileStr = "Results for <processedProject.authority>
-			'The project has <projectMetrics.lineCount> lines for codes containting <projectMetrics.numberOfClones> clones this is <round(percentage,0.01)>% of the total project.
-			'The biggest clone is <projectMetrics.biggestClone.length> LOC long.
-			'There are <size(dupClasses)> clone classes. The biggest class contains <size(dupClasses[projectMetrics.biggestCloneClass])> clones.\n\n";
-	
+		fileStr = "Results for <processedProject.authority>
+				'The project has <projectMetrics.lineCount> lines for codes containting <projectMetrics.numberOfClones> clones this is <round(percentage,0.01)>% of the total project.
+				'The biggest clone is <projectMetrics.biggestClone.length> LOC long.
+				'There are <size(dupClasses)> clone classes. The biggest class contains <size(dupClasses[projectMetrics.biggestCloneClass])> clones.\n\n";
+	}
 	int i = 1;
 	for(dClass <- dupClasses)
 	{

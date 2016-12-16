@@ -7,6 +7,7 @@ import IO;
 import Map;
 import List;
 import String;
+import util::Math;
 
 //Ensure that an empty file won't crash it
 test bool emptyFileClones()
@@ -54,7 +55,8 @@ test bool testGetDuplicates()
 	projectToProcess = knownClones;
 	
 	testResult = getDuplicates();
-	println(testResult);
+	//println(testResult);
+	
 	//there should be 2 duplicates in total
 	//this covers all of the filtering code also
 	if(testResult == 2)
@@ -69,7 +71,7 @@ test bool testGrowDuplicates()
 	projectToProcess = knownClones;
 	analyze(knownClones);
 	
-	println(projectMetrics);
+	//println(projectMetrics);
 	
 	//should grow to cover 26 lines, 13 in each file
 	if(projectMetrics.lineCount == 26)
@@ -112,7 +114,7 @@ test bool testGetSixLines()
 	testData = FileLine("", toLocation("project://HelloClones/src/HelloClones1.java"), 0);
 	testResult = getSixLines(testData);
 	
-	println(testResult);
+	//println(testResult);
 	
 	//returns first 6 lines. In test data this is 161 characters exactly.
 	if(size(testResult) == 161 && startsWith(testResult, "public class HelloClones1 {") && endsWith(testResult, "System.out.println(\"Line 3\");"))
@@ -180,10 +182,14 @@ test bool testMetricsGeneration()
 			|project://HelloClones/src/HelloClones1.java|(29,39,<0,0>,<0,0>),
 			1),
 			|project://HelloClones/src/HelloClones1.java|(29,305,<0,0>,<0,0>),
-			12),
-			26,
-			2,
-			"\tpublic static void main(String[] argv)\t{\t\tSystem.out.println(\"Line 1\");\t\tSystem.out.println(\"Line 2\");\t\tSystem.out.println(\"Line 3\");\t\tSystem.out.println(\"Line 4\");");
+			12,
+			false),
+			round(26.0,1),
+			round(2.0,1),
+			"\tpublic static void main(String[] argv)\t{\t\tSystem.out.println(\"Line 1\");\t\tSystem.out.println(\"Line 2\");\t\tSystem.out.println(\"Line 3\");\t\tSystem.out.println(\"Line 4\");",
+			round(24.0,1),
+			round(0.0,1),
+			round(0.0,1));
 			
 	projectToProcess = knownClones;
 	analyze(knownClones);
