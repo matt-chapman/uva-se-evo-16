@@ -31,9 +31,9 @@ This document serves as a basic design document accompanying the creation of the
 The goal of this document is to explain the basic workings of the tool, along with some rationale for the design decisions that were taken during development.
 
 \section{Using the tool}
-To begin using the tool, open the project in Eclipse, and begin a Rascal console session. In this console run the commands \texttt{import CloneVisualisation; runTool();} to start the tool.
+To begin using the tool, open the project in Eclipse, and begin a Rascal console session. In this console run the commands \texttt{import CloneVisualisation; startTool();} to start the tool.
 
-In the top right corner of the screen there is a combobox for selecting one of two different projects: \texttt{hsqldb} or \texttt{smallsql}\footnote{In it's default state, the clone highlighting in this project will not work correctly with the tool, due to it using \texttt{CR NL} for new lines. These characters are ignored when files are read by Rascal, but not when creating \texttt{loc} objects. It is necessary to write a script to handle replacing these characters - which will be made available in the project repository.}. Select one of these projects and click \textit{Analyse} to begin the analysis.
+In the top right corner of the screen there is a combobox for selecting one of two different projects: \texttt{hsqldb} or \texttt{smallsql}\footnote{In it's default state, the clone highlighting in this project will not work correctly with the tool, due to it using \texttt{CR LF} for new lines. These characters are ignored when files are read by Rascal, but not when creating \texttt{loc} objects. It is necessary to write a script to handle replacing these characters - which will be made available in the project repository.}. Select one of these projects and click \textit{Analyse} to begin the analysis.
 
 Figure \ref{fig:shot1} shows an example of the view presented when a project is analysed. The top bar (green) displays some basic clone metrics for the project in question, along with links that can be clicked to display the biggest clone and clone class.\newpage
 
@@ -151,6 +151,14 @@ Being that our aim was to create a tool for a maintainer, as opposed to just bli
 The built-in Rascal libraries do offer the possibility of using the \texttt{Outline} object to create visualisations such as this. Unfortunately the existence of this object came far too late in the development process to be of any use, and as such the process below become a valuable \textit{learning experience} regarding reading documentation and planning before beginning an implementation.
 
 Our visualisation starts by generating a box for a given file. This box is of fixed width and it's length is bounded by the length of the file itself. Once this container is created, we create a list of boxes, one for each clone contained within the file. These boxes are again of fixed width, and bounded by the length of the clone they are going to represent. As we know the start line of any given clone, they are aligned vertically using \texttt{FProperty valign(n)} where \texttt{n} is set according to how far through the container file the start line of the clone is situated. These boxes are then added to a list and overlaid on the container box, which is in turn added to a \texttt{vcat} object along with the file name and file length. These figures are then added to a \texttt{hcat} object which contains all of the completed figures.
+
+\section{Testing}
+
+The tool has built in unit tests that make use of the Rascal testing framework. The testing framework allows the creation of methods with the modifier \texttt{test}, which informs the Rascal interpreter that they are unit test methods.
+
+The tool has close to 100\% coverage of the \texttt{CloneDetection.rsc} Rascal module. These tests cover generalised validity tests such as running the tool against \texttt{hsqldb} and checking for thrown exceptions, and processing empty projects - but also has numerous tests for checking the validity of the output from helper methods that are used to manipulate data and carry out various other operations when the clone detector is run.
+
+To execute the tests, run \texttt{Series2UnitTests;} followed by \texttt{:test}. The Rascal test framework will execute all of the methods in the test suite and return a test report in the console.
 
 \section{Caveats}
 \subsection{Known Issues}
